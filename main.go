@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
+	
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -45,7 +47,7 @@ func (statusJSON *StatusLogedInJSON) ChangeStatus() {
 func homePageHandler(rw http.ResponseWriter, r *http.Request) {
 	// _, err := r.Cookie("session_id")
 	// loggedIn := (err != http.ErrNoCookie)
-
+	rw.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	t, _ := template.ParseFiles("static/main.html")
 	_ = t.Execute(rw, nil)
 }
@@ -144,6 +146,19 @@ func main() {
 	mux.HandleFunc("/", homePageHandler)
 	mux.HandleFunc("/api/v1/login", loginHandler)
 	mux.HandleFunc("/logout", logoutHandler)
+
+	cfg := &tls.Config{
+        MinVersion:               tls.VersionTLS12,
+        CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+        PreferServerCipherSuites: true,
+        CipherSuites: []uint16{
+            tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+            tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+        },
+    }
+
 	staticHandler := http.StripPrefix(
 		"/data/",
 		http.FileServer(http.Dir("./static")),
@@ -155,6 +170,8 @@ func main() {
 		Handler:      mux,
 		ReadTimeout:  http.DefaultClient.Timeout,
 		WriteTimeout: http.DefaultClient.Timeout,
+		TLSConfig:    cfg,
+        TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
 	fmt.Println("starting server at :80")
