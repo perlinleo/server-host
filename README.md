@@ -1,3 +1,3 @@
 # server-host
 
-main 
+dev
