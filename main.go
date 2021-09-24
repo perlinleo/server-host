@@ -151,12 +151,12 @@ func main() {
 	mux.Handle("/data/", staticHandler)
 
 	server := http.Server{
-		Addr:         ":8080",
+		Addr:         ":80",
 		Handler:      mux,
 		ReadTimeout:  http.DefaultClient.Timeout,
 		WriteTimeout: http.DefaultClient.Timeout,
 	}
 
-	fmt.Println("starting server at :8080")
+	fmt.Println("starting server at :80")
 	server.ListenAndServe()
 }
