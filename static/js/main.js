@@ -341,23 +341,11 @@ function signupPage() {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-
+    
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-
-    ajax(
-      'POST',
-      '/signup', { email, password },
-      (status) => {
-        if (status === 200) {
-          clearRoot();
-          userProfileRender();
-          addMenu('menu-profile');
-          return;
-        }
-        alert('Authorized error');
-      }
-    );
+ 
+    signupUser(email,password);
   })
 
   root.appendChild(formContainer);
