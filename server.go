@@ -30,9 +30,10 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
-func (env *Env) cookieHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
-
+	fmt.Println("vhod")
+	fmt.Println("vhod")
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
 		resp.Status = StatusNotFound
@@ -274,7 +275,7 @@ func main() {
 
 	mux := mux.NewRouter()
 
-	mux.HandleFunc("/api/v1/cookie", env.cookieHandler).Methods("GET")
+	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
 	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")

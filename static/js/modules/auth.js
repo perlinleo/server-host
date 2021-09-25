@@ -9,12 +9,15 @@ const loginWithCookie = () => {
       'Content-Type': 'application/json'
     },
   };
-  fetch(`${serverAddress}/api/v1/cookie`, requestOptions)
+  
+  fetch(`${serverAddress}/api/v1/currentuser`, requestOptions)
     .then(response =>
       response.json().then(data => ({
         data: data,
         status: response.status
       })).then(res => {
+        console.log(res.data)
+       
         if (res.status === 200 && res.data.status === 200) {
           clearRoot();
 
