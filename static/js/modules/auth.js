@@ -9,7 +9,7 @@ const loginWithCookie = () => {
       'Content-Type': 'application/json'
     },
   };
-  fetch(`${localAddress}/api/v1/cookie`, requestOptions)
+  fetch(`${serverAddress}/api/v1/cookie`, requestOptions)
     .then(response =>
       response.json().then(data => ({
         data: data,

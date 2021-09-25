@@ -89,7 +89,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "sessionId",
 			Value:    md5CookieValue,
 			Expires:  expiration,
-			Secure:   true,
+			Secure:   false,
 			HttpOnly: true,
 		}
 
@@ -160,7 +160,7 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 		Name:     "sessionId",
 		Value:    md5CookieValue,
 		Expires:  expiration,
-		Secure:   true,
+		Secure:   false,
 		HttpOnly: true,
 	}
 
@@ -284,7 +284,7 @@ func main() {
 	
 	srv := &http.Server{
 		Handler:      mux,
-		Addr:         ":8080",
+		Addr:         ":80",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}

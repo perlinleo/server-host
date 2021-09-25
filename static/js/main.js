@@ -229,7 +229,7 @@ function loginPage() {
         'password': password,
       })
     };
-    fetch("http://127.0.0.1:8080/api/v1/login", requestOptions)
+    fetch("http://95.84.192.140/api/v1/login", requestOptions)
       .then(response =>
         response.json().then(data => ({
           data: data,
@@ -397,7 +397,7 @@ function signupPage() {
         'passwordRepeat': passwordRepeat,
       })
     };
-    fetch("http://127.0.0.1:8080/api/v1/signup", requestOptions)
+    fetch("http://95.84.192.140/api/v1/signup", requestOptions)
       .then(response =>
         response.json().then(data => ({
           data: data,
