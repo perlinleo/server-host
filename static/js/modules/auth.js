@@ -60,13 +60,6 @@ function logoutCookie(){
         headers: { 'Content-Type': 'application/json' },
       };
       fetch(`${serverAddress}/api/v1/logout`, requestOptions)
-        .then(response =>
-          response.json().then(data => ({
-            data: data,
-            status: response.status
-          })).then(res => {
+          clearRoot();
           
-            clearRoot();
-            loginPage();
-          })).catch((error) => console.log(error));
 }

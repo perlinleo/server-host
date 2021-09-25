@@ -2,158 +2,132 @@ package main
 
 import (
 	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-	"fmt"
 
 	"github.com/gorilla/mux"
 )
 
-type User struct {
-	ID          uint64
-	Name        string
-	Email       string
-	Password    string
-	Age         uint64
-	Description string
-	ImgSrc      string
-	Tags        []string
-}
-
-var (
-	users   = make(map[uint64]User)
-	cookies = make(map[string]uint64)
-)
-
 const (
+	StatusOK         = 200
 	StatusBadRequest = 400
 	StatusNotFound   = 404
-	StatusOk         = 200
+	StatusInternalServerError = 500
 )
 
-type JSON struct {
-	Status uint64      `json:"status"`
-	Body   interface{} `json:"body"`
+func sendResp(resp JSON, w *http.ResponseWriter) {
+	byteResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(*w, err.Error(), http.StatusInternalServerError)
+	}
+	(*w).WriteHeader(http.StatusOK)
+	(*w).Write(byteResp)
 }
 
-type CurrentUserBody struct {
-	Name        string   `json:"name"`
-	Email       string   `json:"email"`
-	Age         uint64   `json:"age"`
-	Description string   `json:"description"`
-	ImgSrc      string   `json:"imgSrc"`
-	Tags        []string `json:"tags"`
-}
-
-type LoginUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-func cookieHandler(w http.ResponseWriter, r *http.Request) {
-	var currentStatus uint64
-	currentStatus = StatusNotFound
+func (env *Env) cookieHandler(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
 
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
-		currentStatus = StatusNotFound
-		fmt.Println("Cookie not found")
-		resp.Status = currentStatus
-
-		byteResp, err := json.Marshal(resp)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write(byteResp)
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
 		return
 	}
-	if len(cookies) == 0 {
-		currentStatus = StatusNotFound
-		fmt.Println("Empty cookie")
-	} else {
-		currentUserId, okCookie := cookies[session.Value]
-		if okCookie {
-			
-			currentUser, okUser := users[currentUserId]
-			if !okUser {
-				currentStatus = StatusNotFound
-			}
 
-			userBody := CurrentUserBody{
-				currentUser.Name,
-				currentUser.Email,
-				currentUser.Age,
-				currentUser.Description,
-				currentUser.ImgSrc,
-				currentUser.Tags,
-			}
-
-			currentStatus = StatusOk
-			resp.Body = userBody
-		}
-	}
-
-	resp.Status = currentStatus
-	fmt.Println(resp.Body);
-	byteResp, err := json.Marshal(resp)
+	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(byteResp)
+
+	resp.Status = StatusOK
+	resp.Body = currentUser
+
+	sendResp(resp, &w)
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var currentStatus uint64
-	currentStatus = StatusNotFound
+func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
-	
-	byteReq, _ := ioutil.ReadAll(r.Body)
-	strReq := string(byteReq)
+
+	byteReq, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
 
 	var logUserData LoginUser
-	err := json.Unmarshal([]byte(strReq), &logUserData)
+	err = json.Unmarshal(byteReq, &logUserData)
 	if err != nil {
-		// no valid json data
-		currentStatus = StatusBadRequest
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
 	}
 
-	for _, value := range users {
-		if value.Email == logUserData.Email && value.Password == logUserData.Password {
-			currentStatus = StatusOk
-			fmt.Printf("user %v logged in", value.Email);
-			// create cookie
-			expiration := time.Now().Add(10 * time.Hour)
-			md5CookieValue := md5.Sum([]byte(logUserData.Email))
-			cookie := http.Cookie{
-				Name:     "sessionId",
-				Value:    hex.EncodeToString(md5CookieValue[:]),
-				Expires:  expiration,
-				Secure:   false,
-				HttpOnly: true,
-			}
+	identifiableUser, err := env.db.getUserModel(logUserData.Email)
+	if err != nil {
+		resp.Status = StatusInternalServerError
+		sendResp(resp, &w)
+		return
+	}
 
-			cookies[hex.EncodeToString(md5CookieValue[:])] = value.ID
+	status := StatusOK
+	if identifiableUser.isCorrectPassword(logUserData.Password) {
+		expiration := time.Now().Add(10 * time.Hour)
 
-			http.SetCookie(w, &cookie)
+		data := logUserData.Password + time.Now().String()
+		md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
+
+		cookie := http.Cookie{
+			Name:     "sessionId",
+			Value:    md5CookieValue,
+			Expires:  expiration,
+			Secure:   false,
+			HttpOnly: true,
 		}
+
+		err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+		if err != nil {
+			resp.Status = StatusInternalServerError
+			sendResp(resp, &w)
+			return
+		}
+
+		http.SetCookie(w, &cookie)
+
+		resp.Body = identifiableUser
+	} else {
+		status = StatusNotFound
 	}
 
-	resp.Status = currentStatus
-	byteResp, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	resp.Status = status
+	sendResp(resp, &w)
+}
+
+func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := r.Cookie("sessionId")
+	
+	if err == http.ErrNoCookie {
+		
+		sendResp(JSON{Status: StatusNotFound}, &w)
+		return
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(byteResp)
+
+	err = env.sessionDB.deleteSessionCookie(session.Value)
+	if err != nil {
+		sendResp(JSON{Status: StatusInternalServerError}, &w)
+		return
+	}
+
+	session.Expires = time.Now().AddDate(0, 0, -1)
+	http.SetCookie(w, session)
 }
 
 type spaHandler struct {
@@ -190,7 +164,18 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
-func main() {
+type Env struct {
+	db interface {
+		getUserModel(string) (User, error)
+	}
+	sessionDB interface {
+		getUserByCookie(sessionCookie string) (User, error)
+		newSessionCookie(sessionCookie string, userId uint64) error
+		deleteSessionCookie(sessionCookie string) error
+	}
+}
+
+func init() {
 	marvin := User{
 		ID:          1,
 		Name:        "Mikhail",
@@ -202,15 +187,32 @@ func main() {
 		Tags:        []string{"haha", "hihi"},
 	}
 	users[1] = marvin
+}
+
+func main() {
+	/*db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+	if err != nil {
+		log.Fatal(err)
+	}
+	env := &Env{
+		db: ModelsDB{DB: db},
+	}
+	*/
+
+	env := &Env{
+		db:        MockDB{},
+		sessionDB: MockSessionDB{},
+	}
 
 	mux := mux.NewRouter()
 
-	mux.HandleFunc("/api/v1/cookie", cookieHandler).Methods("GET")
-	mux.HandleFunc("/api/v1/login", loginHandler).Methods("POST")
+	mux.HandleFunc("/api/v1/cookie", env.cookieHandler).Methods("GET")
+	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	mux.PathPrefix("/").Handler(spa)
-
+	
 	srv := &http.Server{
 		Handler:      mux,
 		Addr:         ":80",
