@@ -27,4 +27,5 @@ function setUserProfile(data){
   user.age = data.age;
   user.text = data.description;
   user.photoSrc = data.imgSrc
+  user.tags = data.tags
 }
