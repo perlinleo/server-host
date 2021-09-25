@@ -89,7 +89,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "sessionId",
 			Value:    md5CookieValue,
 			Expires:  expiration,
-			Secure:   false,
+			Secure:   true,
 			HttpOnly: true,
 		}
 
@@ -101,11 +101,78 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.SetCookie(w, &cookie)
-
-		resp.Body = identifiableUser
 	} else {
 		status = StatusNotFound
 	}
+
+	resp.Status = status
+	sendResp(resp, &w)
+}
+
+func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
+	var resp JSON
+
+	byteReq, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	var logUserData LoginUser
+	err = json.Unmarshal(byteReq, &logUserData)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	identifiableUser, err := env.db.getUserModel(logUserData.Email)
+	if err == nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
+
+	status := StatusOK
+
+	newID := len(users) + 1
+	newEmail := logUserData.Email
+	newPassword := logUserData.Password
+
+	md5NewPassword := fmt.Sprintf("%x", md5.Sum([]byte(newPassword)))
+
+	newUser := User{
+		ID:       uint64(newID),
+		Email:    newEmail,
+		Password: md5NewPassword,
+	}
+
+	users[uint64(newID)] = newUser
+
+	// куки
+	expiration := time.Now().Add(10 * time.Hour)
+
+	data := logUserData.Password + time.Now().String()
+	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
+
+	cookie := http.Cookie{
+		Name:     "sessionId",
+		Value:    md5CookieValue,
+		Expires:  expiration,
+		Secure:   true,
+		HttpOnly: true,
+	}
+
+	err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+	if err != nil {
+		resp.Status = StatusInternalServerError
+		sendResp(resp, &w)
+		return
+	}
+
+	http.SetCookie(w, &cookie)
+	// куки
 
 	resp.Status = status
 	sendResp(resp, &w)
@@ -180,7 +247,7 @@ func init() {
 		ID:          1,
 		Name:        "Mikhail",
 		Email:       "mumeu222@mail.ru",
-		Password:    "VBif222!",
+		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
@@ -194,6 +261,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	env := &Env{
 		db: ModelsDB{DB: db},
 	}
@@ -208,6 +276,7 @@ func main() {
 
 	mux.HandleFunc("/api/v1/cookie", env.cookieHandler).Methods("GET")
 	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
@@ -215,7 +284,7 @@ func main() {
 	
 	srv := &http.Server{
 		Handler:      mux,
-		Addr:         ":80",
+		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}

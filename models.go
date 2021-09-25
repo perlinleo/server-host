@@ -1,5 +1,9 @@
-
 package main
+
+import (
+	"crypto/md5"
+	"fmt"
+)
 
 type JSON struct {
 	Status int         `json:"status"`
@@ -22,7 +26,8 @@ func (user User) isEmpty() bool {
 }
 
 func (user User) isCorrectPassword(password string) bool {
-	return user.Password == password // TODO вызов хэш функции
+	md5Password := fmt.Sprintf("%x", md5.Sum([]byte(password)))
+	return user.Password == md5Password
 }
 
 type LoginUser struct {

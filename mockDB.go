@@ -52,8 +52,8 @@ func (MockSessionDB) getUserByCookie(sessionCookie string) (User, error) {
 	return currentUser, nil
 }
 
-func (MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) error {
-	cookies[sessionCookie] = userId
+func (MockSessionDB) newSessionCookie(hashedCookie string, userId uint64) error {
+	cookies[hashedCookie] = userId
 	return nil
 }
 
