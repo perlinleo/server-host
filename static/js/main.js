@@ -103,7 +103,7 @@ function loginPage() {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       };
-      fetch("http://127.0.0.1:8080/api/v1/cookie", requestOptions)
+      fetch("http://95.84.192.140:80/api/v1/cookie", requestOptions)
         .then(response =>
           response.json().then(data => ({
             data: data,
@@ -242,7 +242,7 @@ function loginPage() {
         'password': password,
       })
     };
-    fetch("http://127.0.0.1:8080/api/v1/login", requestOptions)
+    fetch("http://95.84.192.140:80/api/v1/login", requestOptions)
       .then(response =>
         response.json().then(data => ({
           data: data,
@@ -416,7 +416,6 @@ function clickButtons(event) {
 function notDoneYet() {
   root.innerHTML = 'Not done Yet';
 }
-
 
 let currentCard;
 let previousCard;

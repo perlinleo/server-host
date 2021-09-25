@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -60,13 +59,20 @@ func cookieHandler(w http.ResponseWriter, r *http.Request) {
 	var currentStatus uint64
 	currentStatus = StatusNotFound
 	var resp JSON
-
-	fmt.Println(r);
-	fmt.Println("hello")
 	
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
 		currentStatus = StatusNotFound
+
+		resp.Status = currentStatus
+
+		byteResp, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(byteResp)
+		return
 	}
 	if len(cookies) == 0 {
 		currentStatus = StatusNotFound
@@ -128,7 +134,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				Name:     "sessionId",
 				Value:    hex.EncodeToString(md5CookieValue[:]),
 				Expires:  expiration,
-				Secure:   true,
+				Secure:   false,
 				HttpOnly: true,
 			}
 
@@ -204,7 +210,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler:      mux,
-		Addr:         "127.0.0.1:80",
+		Addr:         ":80",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}

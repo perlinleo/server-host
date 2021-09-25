@@ -1,5 +1,5 @@
-module tinder_backend
+module server
 
-go 1.13
+go 1.14
 
 require github.com/gorilla/mux v1.8.0
