@@ -56,25 +56,25 @@ const configApp = {
 const emailRegExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 const passwordRegExp = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
 
-function ajax(method, url, body = null, callback) {
-  const xhr = new XMLHttpRequest();
-  xhr.open(method, url, true);
-  xhr.withCredentials = true;
+// function ajax(method, url, body = null, callback) {
+//   const xhr = new XMLHttpRequest();
+//   xhr.open(method, url, true);
+//   xhr.withCredentials = true;
 
-  xhr.addEventListener('readystatechange', function() {
-    if (xhr.readyState !== XMLHttpRequest.DONE) return;
+//   xhr.addEventListener('readystatechange', function () {
+//     if (xhr.readyState !== XMLHttpRequest.DONE) return;
 
-    callback(xhr.status, xhr.responseText);
-  });
+//     callback(xhr.status, xhr.responseText);
+//   });
 
-  if (body) {
-    xhr.setRequestHeader('Content-type', 'application/json; charset=utf8');
-    xhr.send(JSON.stringify(body));
-    return;
-  }
+//   if (body) {
+//     xhr.setRequestHeader('Content-type', 'application/json; charset=utf8');
+//     xhr.send(JSON.stringify(body));
+//     return;
+//   }
 
-  xhr.send();
-}
+//   xhr.send();
+// }
 
 function createInput(type, text, name) {
   const input = document.createElement('input');
@@ -94,10 +94,10 @@ function createCenterContainer() {
 }
 
 
-function loginPageError(error){
+function loginPageError(error) {
   errorField = document.getElementsByClassName('login-error')[0]
-  errorField.style.visibility="visible"
-  errorField.innerHTML=error
+  errorField.style.visibility = "visible"
+  errorField.innerHTML = error
 }
 
 function loginPage() {
@@ -105,10 +105,10 @@ function loginPage() {
 
   // --------------------------------------------------------
   window.addEventListener('load', (e) => {
-      e.preventDefault();
-      loginWithCookie()
+    e.preventDefault();
+    loginWithCookie()
   })
-    // --------------------------------------------------------
+  // --------------------------------------------------------
 
   const header = createCenterContainer();
 
@@ -122,7 +122,7 @@ function loginPage() {
   const form = document.createElement('form');
   form.classList.add('login-form');
   const errorField = createElementWithClass('div', 'login-error');
-  errorField.innerHTML="error placeholder";
+  errorField.innerHTML = "error placeholder";
   const emailInput = createInput('email', 'Почта', 'email');
   emailInput.addEventListener('input', () => {
     const test = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
@@ -214,16 +214,48 @@ function loginPage() {
     const testEmail = emailRegExp.test(emailInput.value);
     const testPassword = passwordRegExp.test(passwordInput.value);
 
-    if (!testEmail || !testPassword) {
+    if (!testEmail) {
       emailInput.className = 'form-field-novalid';
+    }
+
+    if (!testPassword) {
       passwordInput.className = 'form-field-novalid';
-      // e.preventDefault();
+    }
+    if (!testEmail || !testPassword) {
       return;
     }
 
+    console.log("FLDMSKLF");
+
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    loginWithCredentials(email,password);
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'email': email,
+        'password': password,
+      })
+    };
+    fetch("http://127.0.0.1:8080/api/v1/login", requestOptions)
+      .then(response =>
+        response.json().then(data => ({
+          data: data,
+          status: response.status
+        })).then(res => {
+          if (res.status === 200 && res.data.status === 200) {
+            clearRoot();
+            renderFeed();
+            addMenu('feed');
+          } else if (res.data.status === 404) {
+            const userNotFound = document.createElement('span')
+            userNotFound.textContent = 'Вы не зарегестрированы'
+            userNotFound.style.marginTop = "10px"
+            form.appendChild(userNotFound)
+          }
+        })).catch((error) => console.log(error));
   })
 
   root.appendChild(formContainer);
@@ -266,7 +298,7 @@ function signupPage() {
       passwordInput.className = 'form-field-novalid'
     }
   })
-  
+
   const repeatPasswordInput = createInput('password', 'Пароль', 'password');
   repeatPasswordInput.className = 'form-field-valid';
   repeatPasswordInput.addEventListener('input', () => {
@@ -341,11 +373,56 @@ function signupPage() {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    
+    const testEmail = emailRegExp.test(emailInput.value);
+    const testPassword = passwordRegExp.test(passwordInput.value);
+    const testPasswordRepeat = passwordInput.value === repeatPasswordInput.value;
+
+    if (!testEmail) {
+      emailInput.className = 'form-field-novalid';
+    }
+
+    if (!testPassword) {
+      passwordInput.className = 'form-field-novalid';
+    }
+
+    if (!testPasswordRepeat) {
+      repeatPasswordInput.className = 'form-field-novalid';
+    }
+
+    if (!testEmail || !testPassword || !testPasswordRepeat) {
+      return;
+    }
+
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
- 
-    signupUser(email,password);
+    const passwordRepeat = repeatPasswordInput.value.trim();
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'email': email,
+        'password': password,
+        'passwordRepeat': passwordRepeat,
+      })
+    };
+    fetch("http://127.0.0.1:8080/api/v1/signup", requestOptions)
+      .then(response =>
+        response.json().then(data => ({
+          data: data,
+          status: response.status
+        })).then(res => {
+          if (res.status === 200 && res.data.status === 200) {
+            clearRoot();
+            loginPage();
+          } else if (res.data.status === 404) {
+            const userNotFound = document.createElement('span')
+            userNotFound.textContent = 'Вы уже зарегестрированы'
+            userNotFound.style.marginTop = "10px"
+            form.appendChild(userNotFound)
+          }
+        })).catch((error) => console.log(error));
   })
 
   root.appendChild(formContainer);
@@ -355,13 +432,13 @@ function createProfilePage() {
   root.innerHTML = '<span>Create Profile Page</span>';
 }
 
-
-
 loginPage();
 
 
 root.addEventListener('click', (e) => {
-  const { target } = e;
+  const {
+    target
+  } = e;
   console.log(target.className);
   if (configApp[target.className]) {
     clearRoot();
@@ -376,15 +453,14 @@ root.addEventListener('click', (e) => {
 })
 
 
-// AHAHHAHAHAHAH
-
-
 /**
     Обрабатывает нажатия
  * @param {event} event - Событие
  */
 function clickButtons(event) {
-  const { target } = event;
+  const {
+    target
+  } = event;
   if (configApp[target.className]) {
     clearRoot();
     configApp[target.className].open();
@@ -555,14 +631,6 @@ function fillUser() {
   fillEdit();
 }
 
-/**
-//  __  __                   _  __
-// |  \/  |   ___    _ __   | |/ /   ___   _   _   ___
-// | |\/| |  / _ \  | '_ \  | ' /   / _ \ | | | | / __|
-// | |  | | | (_) | | | | | | . \  |  __/ | |_| | \__ \
-// |_|  |_|  \___/  |_| |_| |_|\_\  \___|  \__, | |___/
-//                                         |___/
- */
 function fillEdit() {
   const divEdit = document.getElementById('editID');
 
@@ -577,14 +645,6 @@ function fillEdit() {
   buttonEdit.appendChild(imgEdit);
 }
 
-/**
-//  __  __                   _  __
-// |  \/  |   ___    _ __   | |/ /   ___   _   _   ___
-// | |\/| |  / _ \  | '_ \  | ' /   / _ \ | | | | / __|
-// | |  | | | (_) | | | | | | . \  |  __/ | |_| | \__ \
-// |_|  |_|  \___/  |_| |_| |_|\_\  \___|  \__, | |___/
-//                                         |___/
- */
 function fillCard() {
   const divCrad = document.getElementById('cardID');
 
@@ -603,14 +663,6 @@ function fillCard() {
   fillshrink();
 }
 
-/**
-//  __  __                   _  __
-// |  \/  |   ___    _ __   | |/ /   ___   _   _   ___
-// | |\/| |  / _ \  | '_ \  | ' /   / _ \ | | | | / __|
-// | |  | | | (_) | | | | | | . \  |  __/ | |_| | \__ \
-// |_|  |_|  \___/  |_| |_| |_|\_\  \___|  \__, | |___/
-//                                         |___/
- */
 function fillshrink() {
   const divshrink = document.getElementById('shrinkID');
 
@@ -627,15 +679,9 @@ function fillshrink() {
 }
 
 /**
-//  __  __                   _  __
-// |  \/  |   ___    _ __   | |/ /   ___   _   _   ___
-// | |\/| |  / _ \  | '_ \  | ' /   / _ \ | | | | / __|
-// | |  | | | (_) | | | | | | . \  |  __/ | |_| | \__ \
-// |_|  |_|  \___/  |_| |_| |_|\_\  \___|  \__, | |___/
-//                                         |___/
-* @param {String} icon - путь до иконки для кнопки с действием
-* @param {String} action - класс действия
-* @return {HTMLButtonElement} - полученная кнопка
+ * @param {String} icon - путь до иконки для кнопки с действием
+ * @param {String} action - класс действия
+ * @return {HTMLButtonElement} - полученная кнопка
  */
 function createActionElement(icon, action) {
   const actionElement = document.createElement('button');
@@ -652,7 +698,6 @@ function createActionElement(icon, action) {
 }
 
 /**
- *
  * @param {String} tag - название тэга
  * @param {String} className - название класса
  * @return {HTMLElement} - Полученный элемент с тэгом
@@ -695,7 +740,6 @@ function addMenu(activeItem) {
 }
 
 /**
- *
  * Очищает root и лишние EventListener-ы
  */
 function clearRoot() {
@@ -704,9 +748,6 @@ function clearRoot() {
   document.removeEventListener('touchmove', handleTouchMove);
   document.removeEventListener('touchend', handleTouchEnd);
 }
-
-
-
 
 /**
  * Рендерит ленту с профилями
@@ -791,7 +832,7 @@ function nextCharacter() {
   bottomPanel.appendChild(actionsContainer);
   card.appendChild(bottomPanel);
   root.appendChild(card);
-  
+
   const mainCard = document.getElementsByClassName('card2')[0];
   if (mainCard) {
     mainCard.className = 'card';
@@ -813,7 +854,7 @@ function nextCharacter() {
 
   root.innerHTML = '<div class="card3"></div>' + root.innerHTML;
 
-  
+
   currentCard = document.getElementsByClassName('card')[0];
   previousCard = document.getElementsByClassName('card2')[0];
   previousCard2 = document.getElementsByClassName('card3')[1];
@@ -822,9 +863,6 @@ function nextCharacter() {
     cardMain.style.animation = 'appearance 0.3s linear 1';
   }
 }
-
-
-
 
 let x1 = null;
 let y1 = null;
@@ -840,18 +878,18 @@ function remove() {
 }
 
 /**
- *
  * @param {Event} event - начало нажатия
  */
 function handleTouchStart(event) {
-  const { touches } = event;
+  const {
+    touches
+  } = event;
   currentCard.style.animation = '';
   x1 = touches[0].clientX;
   y1 = touches[0].clientY;
 }
 
 /**
- *
  * @param {HTMLElement} element - элемент для движения
  * @param {*} diffX - движение по оси X
  * @param {*} diffY - движение по оси Y
@@ -895,7 +933,9 @@ function moveRight(element, diffX, diffY) {
  * @param {Event} event - событие
  */
 function handleTouchMove(event) {
-  const { touches } = event;
+  const {
+    touches
+  } = event;
   x = touches[0].clientX;
   y = touches[0].clientY;
   if (window.innerHeight < y || window.innerWidth < x || y < 0 || x < 0) {
@@ -925,7 +965,6 @@ function returnToStart() {
  * Была ли карточка лайкнута, дизлайкнута или
  * ей просто повозили по экрану (по приколу)
  * @param {event} event - событие
- *
  */
 function handleTouchEnd(event) {
   if (!x1 || !y1) {
@@ -952,7 +991,9 @@ function handleTouchEnd(event) {
     x1 = null;
     x = null;
   } else {
-    const { target } = event;
+    const {
+      target
+    } = event;
     if (!(target.class === 'expand-class' || target.alt === 'shrink')) {
       previousCard.style.animation = 'shrinkSecondary 1s linear 1';
       previousCard2.style.animation = 'shrinkThird 1s linear 1';
