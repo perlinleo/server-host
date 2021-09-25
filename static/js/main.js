@@ -51,30 +51,20 @@ const configApp = {
     name: 'chat',
     open: notDoneYet,
   },
+  'profile-edit': {
+    link: '/profile/edit',
+    name: 'edit profile',
+    open: notDoneYet,
+  },
+  'profile-logout': {
+    link: '/',
+    name: 'logging out',
+    open: logoutCookie,
+  }
 }
 
 const emailRegExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 const passwordRegExp = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
-
-// function ajax(method, url, body = null, callback) {
-//   const xhr = new XMLHttpRequest();
-//   xhr.open(method, url, true);
-//   xhr.withCredentials = true;
-
-//   xhr.addEventListener('readystatechange', function () {
-//     if (xhr.readyState !== XMLHttpRequest.DONE) return;
-
-//     callback(xhr.status, xhr.responseText);
-//   });
-
-//   if (body) {
-//     xhr.setRequestHeader('Content-type', 'application/json; charset=utf8');
-//     xhr.send(JSON.stringify(body));
-//     return;
-//   }
-
-//   xhr.send();
-// }
 
 function createInput(type, text, name) {
   const input = document.createElement('input');
@@ -618,21 +608,37 @@ function fillUser() {
 
   const divCardMain = document.createElement('div');
   divCardMain.id = 'cardMainID';
-  divCardMain.className = 'card-main';
+  divCardMain.className = 'card-main-profile';
   divCrad.appendChild(divCardMain);
 
   fillUserProfile();
 
   const divEdit = document.createElement('div');
   divEdit.id = 'editID';
-  divEdit.className = 'forEdit';
+  divEdit.className = 'actions-container-profile';
   divCrad.appendChild(divEdit);
 
   fillEdit();
 }
 
 function fillEdit() {
+
+  
   const divEdit = document.getElementById('editID');
+
+  const buttonLogout = document.createElement('button');
+  buttonLogout.className = 'menu-icon';
+  divEdit.appendChild(buttonLogout);
+  const imgLogout = document.createElement('img');
+  imgLogout.src = 'icons/button_previous_white.svg';
+  imgLogout.style.width = '50px';
+  imgLogout.style.height = '50px';
+  imgLogout.className = 'profile-logout';
+  imgLogout.alt = 'logout';
+  
+  buttonLogout.appendChild(imgLogout);
+
+
 
   const buttonEdit = document.createElement('button');
   buttonEdit.className = 'menu-icon';
@@ -642,7 +648,10 @@ function fillEdit() {
   imgEdit.style.width = '50px';
   imgEdit.style.height = '50px';
   imgEdit.alt = 'edit';
+  imgEdit.className = 'profile-edit';
   buttonEdit.appendChild(imgEdit);
+  
+  
 }
 
 function fillCard() {
@@ -758,7 +767,14 @@ function renderFeed() {
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('touchend', handleTouchEnd, false);
   const currentobj = sample[counter];
-
+  if(!currentobj) {
+    root.innerHTML='';
+    const outOfCards = createElementWithClass('div','out-of-cards');
+    outOfCards.innerText = 'Карточки кончились'
+    root.appendChild(outOfCards);
+    addMenu('feed');
+    return
+  } 
   const card = createElementWithClass('div', 'card-main');
   const image = document.createElement('img');
   image.src = currentobj.photoSrc;
@@ -804,7 +820,25 @@ function renderFeed() {
  */
 function nextCharacter() {
   const currentobj = sample[counter];
-
+  if(!currentobj){
+    const card1 = document.getElementsByClassName('card3')[0]
+    if (card1) card1.style.animation='liked 1s ease 1'
+    const card2 = document.getElementsByClassName('card3')[1]
+    if (card2) card2.style.animation='liked 1s ease 1'
+    const card3 = document.getElementsByClassName('card2')[0]
+    if (card3) card3.style.animation='liked 1s ease 1'
+    const card4 = document.getElementsByClassName('card')[0]
+    if(card4) card4.style.animation='liked 1s ease 1'
+    setTimeout(()=> {
+      root.innerHTML='';
+      const outOfCards = createElementWithClass('div','out-of-cards');
+      outOfCards.innerText = 'Карточки кончились'
+      root.appendChild(outOfCards);
+      addMenu('feed');
+      
+    },1000);
+    return;
+  }
   const card = createElementWithClass('div', 'card-main');
   const image = document.createElement('img');
   image.src = currentobj.photoSrc;

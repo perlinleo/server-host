@@ -245,6 +245,7 @@ a {
     width: 90%;
     height: 5%;
     left: 41%;
+    right: 41%;
     bottom: 2%;
 }
 
@@ -459,6 +460,23 @@ a {
     margin-top: 3%;
 }
 
+
+.actions-container-profile {
+    width: 50%;
+    height: 10%;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+   
+}
+
 .card-main {
     border-radius: 35px;
     width: 95%;
@@ -469,6 +487,35 @@ a {
     margin-right: auto;
     margin-top: 10px;
     overflow: hidden;
+}
+
+
+.card-main-profile {
+    border-radius: 35px;
+    width: 95%;
+    height: 85%;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.out-of-cards {
+  
+    color:rgba(216, 15, 252, 0.9);
+    font-size: 24px;
+    
+    position: absolute;
+
+    top: 50%;
+
+    left: 57%;
+
+    transform: translate(-50%, -50%);
+
+    margin: 0;
 }
 
 .profile-image {
