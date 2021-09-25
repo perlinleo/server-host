@@ -93,34 +93,21 @@ function createCenterContainer() {
   return divContainer;
 }
 
+
+function loginPageError(error){
+  errorField = document.getElementsByClassName('login-error')[0]
+  errorField.style.visibility="visible"
+  errorField.innerHTML=error
+}
+
 function loginPage() {
   root.innerHTML = '';
 
   // --------------------------------------------------------
   window.addEventListener('load', (e) => {
       e.preventDefault();
-      const requestOptions = {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      };
-      fetch("http://95.84.192.140:80/api/v1/cookie", requestOptions)
-        .then(response =>
-          response.json().then(data => ({
-            data: data,
-            status: response.status
-          })).then(res => {
-            if (res.status === 200 && res.data.status === 200) {
-              clearRoot();
-              userProfileRender();
-              addMenu('profile');
-            }
-            console.log(res.data);
-            // if (res.data.status === 'ok') {
-            //     profilePage();
-            // }
-            // console.log(res.data.status)
-          })).catch((error) => console.log(error));
-    })
+      loginWithCookie()
+  })
     // --------------------------------------------------------
 
   const header = createCenterContainer();
@@ -134,11 +121,11 @@ function loginPage() {
 
   const form = document.createElement('form');
   form.classList.add('login-form');
-
+  const errorField = createElementWithClass('div', 'login-error');
+  errorField.innerHTML="error placeholder";
   const emailInput = createInput('email', 'Почта', 'email');
   emailInput.addEventListener('input', () => {
     const test = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
-
     if (test) {
       emailInput.className = 'form-field-valid';
     } else {
@@ -199,11 +186,13 @@ function loginPage() {
 
   const formContainer = createCenterContainer();
 
+
   emailFieldWithIcon.appendChild(emailInput);
   emailFieldWithIcon.appendChild(emailIcon);
   passwordFieldWithIcon.appendChild(passwordInput);
   passwordFieldWithIcon.appendChild(passwordIcon);
 
+  logoBg.appendChild(errorField);
   logoBg.appendChild(emailFieldWithIcon);
   logoBg.appendChild(passwordFieldWithIcon);
 
@@ -234,30 +223,7 @@ function loginPage() {
 
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        'email': email,
-        'password': password,
-      })
-    };
-    fetch("http://95.84.192.140:80/api/v1/login", requestOptions)
-      .then(response =>
-        response.json().then(data => ({
-          data: data,
-          status: response.status
-        })).then(res => {
-          if (res.status === 200 && res.data.status === 200) {
-            clearRoot();
-            userProfileRender();
-            addMenu('profile');
-          } else if (res.data.status === 404) {
-            const userNotFound = document.createElement('span')
-            userNotFound.textContent = 'Вы не зарегестрированы'
-            form.appendChild(userNotFound)
-          }
-        })).catch((error) => console.log(error));
+    loginWithCredentials(email,password);
   })
 
   root.appendChild(formContainer);
@@ -280,8 +246,37 @@ function signupPage() {
   form.classList.add('login-form');
 
   const emailInput = createInput('email', 'Почта', 'email');
+  emailInput.className = 'form-field-valid';
+  emailInput.addEventListener('input', () => {
+    const test = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
+    if (test) {
+      emailInput.className = 'form-field-valid';
+    } else {
+      emailInput.className = 'form-field-novalid'
+    }
+  })
   const passwordInput = createInput('password', 'Пароль', 'password');
-  const repeatPasswordInput = createInput('password', 'Повторите пароль', 'password');
+  passwordInput.className = 'form-field-valid';
+  passwordInput.addEventListener('input', () => {
+    const test = passwordInput.value.length === 0 || passwordRegExp.test(passwordInput.value);
+
+    if (test) {
+      passwordInput.className = 'form-field-valid';
+    } else {
+      passwordInput.className = 'form-field-novalid'
+    }
+  })
+  
+  const repeatPasswordInput = createInput('password', 'Пароль', 'password');
+  repeatPasswordInput.className = 'form-field-valid';
+  repeatPasswordInput.addEventListener('input', () => {
+    const test = passwordInput.value === repeatPasswordInput.value;
+    if (test) {
+      repeatPasswordInput.className = 'form-field-valid';
+    } else {
+      repeatPasswordInput.className = 'form-field-novalid'
+    }
+  })
 
   // кнопка зарегестрироваться
   const submitButton = document.createElement('button');
@@ -291,7 +286,7 @@ function signupPage() {
   const buttonFilling = createCenterContainer();
   const buttonText = document.createElement('span');
   buttonText.textContent = 'Зарегистрироваться';
-  buttonText.classList.add('login-button-text');
+  buttonText.classList.add('signup-button-text');
   const buttonIcon = document.createElement('img');
   buttonIcon.src = './svg/next.svg';
   buttonIcon.classList.add('svg-next');
@@ -808,7 +803,7 @@ function nextCharacter() {
   bottomPanel.appendChild(actionsContainer);
   card.appendChild(bottomPanel);
   root.appendChild(card);
-
+  
   const mainCard = document.getElementsByClassName('card2')[0];
   if (mainCard) {
     mainCard.className = 'card';
@@ -828,9 +823,9 @@ function nextCharacter() {
     root.removeChild(document.getElementsByClassName('card')[1]);
   }
 
+  root.innerHTML = '<div class="card3"></div>' + root.innerHTML;
 
-
-
+  
   currentCard = document.getElementsByClassName('card')[0];
   previousCard = document.getElementsByClassName('card2')[0];
   previousCard2 = document.getElementsByClassName('card3')[1];
@@ -841,7 +836,7 @@ function nextCharacter() {
 }
 
 
-nextCharacter();
+
 
 let x1 = null;
 let y1 = null;

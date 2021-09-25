@@ -20,3 +20,11 @@ const user = {
     'surfing',
   ],
 };
+
+function setUserProfile(data){
+  console.log(data.name)
+  user.firstName=data.name;
+  user.age = data.age;
+  user.text = data.description;
+  user.photoSrc = data.imgSrc
+}

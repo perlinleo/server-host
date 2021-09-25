@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"fmt"
 
 	"github.com/gorilla/mux"
 )
@@ -59,11 +60,11 @@ func cookieHandler(w http.ResponseWriter, r *http.Request) {
 	var currentStatus uint64
 	currentStatus = StatusNotFound
 	var resp JSON
-	
+
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
 		currentStatus = StatusNotFound
-
+		fmt.Println("Cookie not found")
 		resp.Status = currentStatus
 
 		byteResp, err := json.Marshal(resp)
@@ -76,9 +77,11 @@ func cookieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(cookies) == 0 {
 		currentStatus = StatusNotFound
+		fmt.Println("Empty cookie")
 	} else {
 		currentUserId, okCookie := cookies[session.Value]
 		if okCookie {
+			
 			currentUser, okUser := users[currentUserId]
 			if !okUser {
 				currentStatus = StatusNotFound
@@ -99,7 +102,7 @@ func cookieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Status = currentStatus
-
+	fmt.Println(resp.Body);
 	byteResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,7 +129,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	for _, value := range users {
 		if value.Email == logUserData.Email && value.Password == logUserData.Password {
 			currentStatus = StatusOk
-
+			fmt.Printf("user %v logged in", value.Email);
 			// create cookie
 			expiration := time.Now().Add(10 * time.Hour)
 			md5CookieValue := md5.Sum([]byte(logUserData.Email))
@@ -195,7 +198,7 @@ func main() {
 		Password:    "VBif222!",
 		Age:         20,
 		Description: "Hahahahaha",
-		ImgSrc:      "/static/users/user1",
+		ImgSrc:      "/img/Yachty-tout.jpg",
 		Tags:        []string{"haha", "hihi"},
 	}
 	users[1] = marvin
