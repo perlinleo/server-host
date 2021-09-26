@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 const (
@@ -30,10 +31,23 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
+// func setupResponse(w *http.ResponseWriter, req *http.Request) {
+// 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+// 	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
+// 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+// 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Set-Cookie")
+// }
+
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
+	// setupResponse(&w, r)
+	// if (*r).Method == "OPTIONS" {
+	// 	return
+	// }
+
 	var resp JSON
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
+		fmt.Println("tyt suka")
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
@@ -46,6 +60,8 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(resp)
+
 	resp.Status = StatusOK
 	resp.Body = currentUser
 
@@ -53,6 +69,11 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
+	// setupResponse(&w, r)
+	// if (*r).Method == "OPTIONS" {
+	// 	return
+	// }
+
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
@@ -88,7 +109,8 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "sessionId",
 			Value:    md5CookieValue,
 			Expires:  expiration,
-			Secure:   false,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
 			HttpOnly: true,
 		}
 
@@ -355,12 +377,17 @@ func main() {
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
-	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	mux.PathPrefix("/").Handler(spa)
+	// spa := spaHandler{staticPath: "static", indexPath: "index.html"}
+	// mux.PathPrefix("/").Handler(spa)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://127.0.0.1"},
+		AllowCredentials: true,
+	})
+	handler := c.Handler(mux)
 	srv := &http.Server{
-		Handler:      mux,
-		Addr:         ":80",
+		Handler:      handler,
+		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}

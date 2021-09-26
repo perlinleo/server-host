@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -16,6 +17,7 @@ type MockDB struct {
 
 func (MockDB) getUserModel(email string) (User, error) {
 	if len(users) == 0 {
+		fmt.Println("tyt")
 		return User{}, errors.New("users is empty map")
 	}
 
@@ -28,6 +30,7 @@ func (MockDB) getUserModel(email string) (User, error) {
 		}
 	}
 	if !okUser {
+		fmt.Println("net tyt")
 		return User{}, errors.New("User not found")
 	}
 
