@@ -1,7 +1,3 @@
-const serverAddress = 'http://95.84.192.140'
-const localAddress = 'http://127.0.0.1'
-
-
 const loginWithCookie = () => {
   const requestOptions = {
     method: 'GET',
@@ -16,16 +12,15 @@ const loginWithCookie = () => {
         data: data,
         status: response.status
       })).then(res => {
-        console.log(res.data)
        
         if (res.status === 200 && res.data.status === 200) {
           clearRoot();
 
           setUserProfile(res.data.body);
-          userProfileRender();
-          addMenu('profile');
+          swipeUser(user.id)
+          // userProfileRender();
+          
         }
-        console.log(res.data);
         // if (res.data.status === 'ok') {
         //     profilePage();
         // }
@@ -65,7 +60,13 @@ function logoutCookie(){
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       };
-      fetch(`${serverAddress}/api/v1/logout`, requestOptions)
-          clearRoot();
-         
+      fetch(`${serverAddress}/api/v1/logout`, requestOptions).then(response =>
+      { 
+        
+        clearRoot();
+        
+        loginPage();   
+      }
+    )
+      
 }

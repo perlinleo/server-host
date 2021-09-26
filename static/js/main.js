@@ -114,6 +114,7 @@ function loginPage() {
   const errorField = createElementWithClass('div', 'login-error');
   errorField.innerHTML = "error placeholder";
   const emailInput = createInput('email', 'Почта', 'email');
+  emailInput.className = 'form-field-valid';
   emailInput.addEventListener('input', () => {
     const test = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
     if (test) {
@@ -133,7 +134,7 @@ function loginPage() {
       passwordInput.className = 'form-field-novalid'
     }
   })
-
+  passwordInput.className = 'form-field-valid';
   window.addEventListener('load', () => {
     const testEmail = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
     emailInput.className = testEmail ? 'form-field-valid' : 'form-field-novalid';
@@ -215,37 +216,9 @@ function loginPage() {
       return;
     }
 
-    console.log("FLDMSKLF");
-
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        'email': email,
-        'password': password,
-      })
-    };
-    fetch("http://95.84.192.140/api/v1/login", requestOptions)
-      .then(response =>
-        response.json().then(data => ({
-          data: data,
-          status: response.status
-        })).then(res => {
-          if (res.status === 200 && res.data.status === 200) {
-            clearRoot();
-            renderFeed();
-            addMenu('feed');
-          } else if (res.data.status === 404) {
-            const userNotFound = document.createElement('span')
-            userNotFound.textContent = 'Вы не зарегестрированы'
-            userNotFound.style.marginTop = "10px"
-            form.appendChild(userNotFound)
-          }
-        })).catch((error) => console.log(error));
+    loginWithCredentials(email, password);
   })
 
   root.appendChild(formContainer);
@@ -397,7 +370,7 @@ function signupPage() {
         'passwordRepeat': passwordRepeat,
       })
     };
-    fetch("http://95.84.192.140/api/v1/signup", requestOptions)
+    fetch(`${serverAddress}/api/v1/signup`, requestOptions)
       .then(response =>
         response.json().then(data => ({
           data: data,
@@ -429,7 +402,6 @@ root.addEventListener('click', (e) => {
   const {
     target
   } = e;
-  console.log(target.className);
   if (configApp[target.className]) {
     clearRoot();
     configApp[target.className].open();
@@ -634,7 +606,7 @@ function fillEdit() {
   imgLogout.style.width = '50px';
   imgLogout.style.height = '50px';
   imgLogout.className = 'profile-logout';
-  imgLogout.alt = 'logout';
+
   
   buttonLogout.appendChild(imgLogout);
 
@@ -762,10 +734,12 @@ function clearRoot() {
  * Рендерит ленту с профилями
  */
 function renderFeed() {
+  // swipeUser(user.id)
   document.addEventListener('click', clickButtons, false);
   document.addEventListener('touchstart', handleTouchStart, false);
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('touchend', handleTouchEnd, false);
+  
   const currentobj = sample[counter];
   if(!currentobj) {
     root.innerHTML='';
@@ -815,89 +789,6 @@ function renderFeed() {
   previousCard2 = document.getElementsByClassName('card3')[1];
 }
 
-/**
- * Рендерит следующую карточку
- */
-function nextCharacter() {
-  const currentobj = sample[counter];
-  if(!currentobj){
-    const card1 = document.getElementsByClassName('card3')[0]
-    if (card1) card1.style.animation='liked 1s ease 1'
-    const card2 = document.getElementsByClassName('card3')[1]
-    if (card2) card2.style.animation='liked 1s ease 1'
-    const card3 = document.getElementsByClassName('card2')[0]
-    if (card3) card3.style.animation='liked 1s ease 1'
-    const card4 = document.getElementsByClassName('card')[0]
-    if(card4) card4.style.animation='liked 1s ease 1'
-    setTimeout(()=> {
-      root.innerHTML='';
-      const outOfCards = createElementWithClass('div','out-of-cards');
-      outOfCards.innerText = 'Карточки кончились'
-      root.appendChild(outOfCards);
-      addMenu('feed');
-      
-    },1000);
-    return;
-  }
-  const card = createElementWithClass('div', 'card-main');
-  const image = document.createElement('img');
-  image.src = currentobj.photoSrc;
-  image.className = 'profile-image';
-  card.appendChild(image);
-  const bottomPanel = createElementWithClass('div', 'bottom-panel');
-  const nameContainer = createElementWithClass('div', 'name-container');
-  const name = createElementWithClass('div', 'name');
-  name.innerText = currentobj.firstName;
-  const age = createElementWithClass('div', 'age');
-  age.innerText = currentobj.age;
-  nameContainer.appendChild(name);
-  nameContainer.appendChild(age);
-  bottomPanel.appendChild(nameContainer);
-  const actionsContainer = createElementWithClass('div', 'actions-container');
-
-
-  actionsContainer.appendChild(createActionElement('icons/button_dislike_white.svg', 'dislike-card'));
-
-  actionsContainer.appendChild(createActionElement('icons/button_expand_white.svg', 'expand-card'));
-
-  actionsContainer.appendChild(createActionElement('icons/tapbar_likes_white_selected.svg', 'like-card'));
-
-
-  bottomPanel.appendChild(actionsContainer);
-  card.appendChild(bottomPanel);
-  root.appendChild(card);
-
-  const mainCard = document.getElementsByClassName('card2')[0];
-  if (mainCard) {
-    mainCard.className = 'card';
-    mainCard.appendChild(card);
-  } else {
-    const mainCard = document.createElement('div');
-    mainCard.className = 'card';
-    mainCard.appendChild(card);
-  }
-
-  const card3old = document.getElementsByClassName('card3')[1];
-  if (card3old) {
-    card3old.className = 'card2';
-  }
-  const card1 = document.getElementsByClassName('card')[0];
-  if (card1) {
-    root.removeChild(document.getElementsByClassName('card')[1]);
-  }
-
-  root.innerHTML = '<div class="card3"></div>' + root.innerHTML;
-
-
-  currentCard = document.getElementsByClassName('card')[0];
-  previousCard = document.getElementsByClassName('card2')[0];
-  previousCard2 = document.getElementsByClassName('card3')[1];
-  const cardMain = document.getElementsByClassName('card-main')[0];
-  if (cardMain) {
-    cardMain.style.animation = 'appearance 0.3s linear 1';
-  }
-}
-
 let x1 = null;
 let y1 = null;
 
@@ -907,8 +798,8 @@ let y = null;
 /**
  * Убирает текущую карточку
  */
-function remove() {
-  currentCard.style.opacity = 0;
+function remove(cardToRemove) {
+  cardToRemove.style.opacity = 0;
 }
 
 /**
@@ -1010,17 +901,25 @@ function handleTouchEnd(event) {
   }
   if (x1 - x < -200) {
     currentCard.style.animation = 'liked 1s ease 1';
-    setTimeout(remove, 1000);
-    setTimeout(nextCharacter, 1000);
+    const cardToRemove = currentCard
+    setTimeout(remove(cardToRemove), 1000);
+    
+    
+    const id = sample[counter].id
+    console.log(id)
+    setTimeout(swipeUser(id), 1000);
     counter++;
 
     x1 = null;
     x = null;
   } else if (x1 - x > 200) {
     currentCard.style.animation = 'liked 1s ease 1';
-
-    setTimeout(remove, 1000);
-    setTimeout(nextCharacter, 1000);
+    const cardToRemove = currentCard
+    setTimeout(remove(cardToRemove), 1000);
+    const id = sample[counter].id
+ 
+    console.log(id)
+    setTimeout(swipeUser(id), 1000);
     counter++;
     x1 = null;
     x = null;
