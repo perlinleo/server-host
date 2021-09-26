@@ -19,6 +19,7 @@ const (
 	StatusBadRequest          = 400
 	StatusNotFound            = 404
 	StatusInternalServerError = 500
+	StatusEmailAlreadyExists  = 1001
 )
 
 func sendResp(resp JSON, w *http.ResponseWriter) {
@@ -30,10 +31,27 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
+func createSessionCookie(user LoginUser) http.Cookie {
+	expiration := time.Now().Add(10 * time.Hour)
+
+	data := user.Password + time.Now().String()
+	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
+
+	cookie := http.Cookie{
+		Name:     "sessionId",
+		Value:    md5CookieValue,
+		Expires:  expiration,
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	return cookie
+}
+
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
 	session, err := r.Cookie("sessionId")
-	if err == http.ErrNoCookie {
+	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
@@ -79,20 +97,8 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	status := StatusOK
 	if identifiableUser.isCorrectPassword(logUserData.Password) {
-		expiration := time.Now().Add(10 * time.Hour)
-
-		data := logUserData.Password + time.Now().String()
-		md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
-
-		cookie := http.Cookie{
-			Name:     "sessionId",
-			Value:    md5CookieValue,
-			Expires:  expiration,
-			Secure:   false,
-			HttpOnly: true,
-		}
-
-		err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+		cookie := createSessionCookie(logUserData)
+		err = env.sessionDB.newSessionCookie(cookie.Value, identifiableUser.ID)
 		if err != nil {
 			resp.Status = StatusInternalServerError
 			sendResp(resp, &w)
@@ -126,44 +132,22 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identifiableUser, err := env.db.getUserModel(logUserData.Email)
-	if err == nil {
-		resp.Status = StatusNotFound
+	identifiableUser, _ := env.db.getUserModel(logUserData.Email)
+	if !identifiableUser.isEmpty() {
+		resp.Status = StatusEmailAlreadyExists
 		sendResp(resp, &w)
 		return
 	}
 
-	status := StatusOK
-
-	newID := len(users) + 1
-	newEmail := logUserData.Email
-	newPassword := logUserData.Password
-
-	md5NewPassword := fmt.Sprintf("%x", md5.Sum([]byte(newPassword)))
-
-	newUser := User{
-		ID:       uint64(newID),
-		Email:    newEmail,
-		Password: md5NewPassword,
+	err = env.db.createUser(logUserData)
+	if err != nil {
+		resp.Status = StatusInternalServerError
+		sendResp(resp, &w)
+		return
 	}
 
-	users[uint64(newID)] = newUser
-
-	// куки
-	expiration := time.Now().Add(10 * time.Hour)
-
-	data := logUserData.Password + time.Now().String()
-	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
-
-	cookie := http.Cookie{
-		Name:     "sessionId",
-		Value:    md5CookieValue,
-		Expires:  expiration,
-		Secure:   false,
-		HttpOnly: true,
-	}
-
-	err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+	cookie := createSessionCookie(logUserData)
+	err = env.sessionDB.newSessionCookie(cookie.Value, identifiableUser.ID)
 	if err != nil {
 		resp.Status = StatusInternalServerError
 		sendResp(resp, &w)
@@ -171,9 +155,8 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &cookie)
-	// куки
 
-	resp.Status = status
+	resp.Status = StatusOK
 	sendResp(resp, &w)
 }
 
@@ -285,6 +268,7 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type Env struct {
 	db interface {
 		getUserModel(string) (User, error)
+		createUser(logUserData LoginUser) error
 		addSwipedUsers(uint64, uint64) error
 		getNextUserForSwipe(uint64) (User, error)
 	}
@@ -351,6 +335,7 @@ func main() {
 
 	router.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
 	router.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	//router.HandleFunc("/api/v1/createprofile", env.loginHandler).Methods("POST")
 	router.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
 	router.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 	router.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")

@@ -34,6 +34,14 @@ func (MockDB) getUserModel(email string) (User, error) {
 	return currentUser, nil
 }
 
+func (MockDB) createUser(logUserData LoginUser) error {
+	newID := uint64(len(users) + 1)
+
+	users[newID] = makeUser(newID, logUserData.Email, logUserData.Password)
+
+	return nil
+}
+
 func (MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
 	if len(users) == 0 {
 		return errors.New("users is empty map")
@@ -111,8 +119,8 @@ func (MockSessionDB) getUserByCookie(sessionCookie string) (User, error) {
 	return currentUser, nil
 }
 
-func (MockSessionDB) newSessionCookie(hashedCookie string, userId uint64) error {
-	cookies[hashedCookie] = userId
+func (MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) error {
+	cookies[sessionCookie] = userId
 	return nil
 }
 
