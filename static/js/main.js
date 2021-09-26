@@ -114,6 +114,7 @@ function loginPage() {
   const errorField = createElementWithClass('div', 'login-error');
   errorField.innerHTML = "error placeholder";
   const emailInput = createInput('email', 'Почта', 'email');
+  emailInput.className = 'form-field-valid';
   emailInput.addEventListener('input', () => {
     const test = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
     if (test) {
@@ -133,7 +134,7 @@ function loginPage() {
       passwordInput.className = 'form-field-novalid'
     }
   })
-
+  passwordInput.className = 'form-field-valid';
   window.addEventListener('load', () => {
     const testEmail = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
     emailInput.className = testEmail ? 'form-field-valid' : 'form-field-novalid';
@@ -605,7 +606,7 @@ function fillEdit() {
   imgLogout.style.width = '50px';
   imgLogout.style.height = '50px';
   imgLogout.className = 'profile-logout';
-  imgLogout.alt = 'logout';
+
   
   buttonLogout.appendChild(imgLogout);
 
@@ -738,11 +739,8 @@ function renderFeed() {
   document.addEventListener('touchstart', handleTouchStart, false);
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('touchend', handleTouchEnd, false);
-  console.log(sample)
-  console.log(counter)
-  console.log(sample[0])
-  console.log('--------------')
-  const currentobj = sample[0];
+  
+  const currentobj = sample[counter];
   if(!currentobj) {
     root.innerHTML='';
     const outOfCards = createElementWithClass('div','out-of-cards');
@@ -789,71 +787,6 @@ function renderFeed() {
   currentCard = document.getElementsByClassName('card')[0];
   previousCard = document.getElementsByClassName('card2')[0];
   previousCard2 = document.getElementsByClassName('card3')[1];
-}
-
-/**
- * Рендерит следующую карточку
- */
-function nextCharacter(id) {
-  swipeUser(id);
-  const currentobj = sample[counter];
-  const card = createElementWithClass('div', 'card-main');
-  const image = document.createElement('img');
-  image.src = currentobj.photoSrc;
-  image.className = 'profile-image';
-  card.appendChild(image);
-  const bottomPanel = createElementWithClass('div', 'bottom-panel');
-  const nameContainer = createElementWithClass('div', 'name-container');
-  const name = createElementWithClass('div', 'name');
-  name.innerText = currentobj.firstName;
-  const age = createElementWithClass('div', 'age');
-  age.innerText = currentobj.age;
-  nameContainer.appendChild(name);
-  nameContainer.appendChild(age);
-  bottomPanel.appendChild(nameContainer);
-  const actionsContainer = createElementWithClass('div', 'actions-container');
-
-
-  actionsContainer.appendChild(createActionElement('icons/button_dislike_white.svg', 'dislike-card'));
-
-  actionsContainer.appendChild(createActionElement('icons/button_expand_white.svg', 'expand-card'));
-
-  actionsContainer.appendChild(createActionElement('icons/tapbar_likes_white_selected.svg', 'like-card'));
-
-
-  bottomPanel.appendChild(actionsContainer);
-  card.appendChild(bottomPanel);
-  root.appendChild(card);
-
-  const mainCard = document.getElementsByClassName('card2')[0];
-  if (mainCard) {
-    mainCard.className = 'card';
-    mainCard.appendChild(card);
-  } else {
-    const mainCard = document.createElement('div');
-    mainCard.className = 'card';
-    mainCard.appendChild(card);
-  }
-
-  const card3old = document.getElementsByClassName('card3')[1];
-  if (card3old) {
-    card3old.className = 'card2';
-  }
-  const card1 = document.getElementsByClassName('card')[0];
-  if (card1) {
-    root.removeChild(document.getElementsByClassName('card')[1]);
-  }
-
-  root.innerHTML = '<div class="card3"></div>' + root.innerHTML;
-
-
-  currentCard = document.getElementsByClassName('card')[0];
-  previousCard = document.getElementsByClassName('card2')[0];
-  previousCard2 = document.getElementsByClassName('card3')[1];
-  const cardMain = document.getElementsByClassName('card-main')[0];
-  if (cardMain) {
-    cardMain.style.animation = 'appearance 0.3s linear 1';
-  }
 }
 
 let x1 = null;
@@ -970,8 +903,11 @@ function handleTouchEnd(event) {
     currentCard.style.animation = 'liked 1s ease 1';
     const cardToRemove = currentCard
     setTimeout(remove(cardToRemove), 1000);
+    
+    
     const id = sample[counter].id
-    setTimeout(nextCharacter(id), 1000);
+    console.log(id)
+    setTimeout(swipeUser(id), 1000);
     counter++;
 
     x1 = null;
@@ -981,7 +917,9 @@ function handleTouchEnd(event) {
     const cardToRemove = currentCard
     setTimeout(remove(cardToRemove), 1000);
     const id = sample[counter].id
-    setTimeout(nextCharacter(id), 1000);
+ 
+    console.log(id)
+    setTimeout(swipeUser(id), 1000);
     counter++;
     x1 = null;
     x = null;

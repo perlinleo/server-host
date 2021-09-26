@@ -36,9 +36,14 @@ const swipeUser = (id) => {
         console.log(res.data.status)
         console.log(res.data.body)
         if (res.data.status === 200) {
+          clearRoot();
           addProfile(res.data.body)
+          renderFeed();
+          addMenu('feed');
         } else if (res.data.status === 404) {
-
+          clearRoot();
+          renderFeed();
+          addMenu('feed');
         }
         
         // console.log(sample)

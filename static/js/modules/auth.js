@@ -18,9 +18,8 @@ const loginWithCookie = () => {
 
           setUserProfile(res.data.body);
           swipeUser(user.id)
-          renderFeed();
           // userProfileRender();
-          addMenu('feed');
+          
         }
         // if (res.data.status === 'ok') {
         //     profilePage();
@@ -61,7 +60,13 @@ function logoutCookie(){
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       };
-      fetch(`${serverAddress}/api/v1/logout`, requestOptions)
-          clearRoot();
-         
+      fetch(`${serverAddress}/api/v1/logout`, requestOptions).then(response =>
+      { 
+        
+        clearRoot();
+        
+        loginPage();   
+      }
+    )
+      
 }
