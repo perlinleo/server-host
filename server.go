@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	StatusOK         = 200
-	StatusBadRequest = 400
-	StatusNotFound   = 404
+	StatusOK                  = 200
+	StatusBadRequest          = 400
+	StatusNotFound            = 404
 	StatusInternalServerError = 500
 )
 
@@ -32,8 +32,6 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
-	fmt.Println("vhod")
-	fmt.Println("vhod")
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
 		resp.Status = StatusNotFound
@@ -74,7 +72,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifiableUser, err := env.db.getUserModel(logUserData.Email)
 	if err != nil {
-		resp.Status = StatusInternalServerError
+		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
 	}
@@ -181,9 +179,8 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("sessionId")
-	
+
 	if err == http.ErrNoCookie {
-		
 		sendResp(JSON{Status: StatusNotFound}, &w)
 		return
 	}
@@ -196,6 +193,59 @@ func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	session.Expires = time.Now().AddDate(0, 0, -1)
 	http.SetCookie(w, session)
+}
+
+func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
+	var resp JSON
+
+	// get current user by cookie
+	session, err := r.Cookie("sessionId")
+	if err == http.ErrNoCookie {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
+	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
+
+	// get swiped user id from json
+	byteReq, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+	var swipedUserData SwipedUser
+	err = json.Unmarshal(byteReq, &swipedUserData)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	// add in swaped users map for current user
+	err = env.db.addSwipedUsers(currentUser.ID, swipedUserData.Id)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
+	// find next user for swipe
+	nextUser, err := env.db.getNextUserForSwipe(currentUser.ID)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
+
+	resp.Status = StatusOK
+	resp.Body = nextUser
+
+	sendResp(resp, &w)
 }
 
 type spaHandler struct {
@@ -235,6 +285,8 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type Env struct {
 	db interface {
 		getUserModel(string) (User, error)
+		addSwipedUsers(uint64, uint64) error
+		getNextUserForSwipe(uint64) (User, error)
 	}
 	sessionDB interface {
 		getUserByCookie(sessionCookie string) (User, error)
@@ -254,7 +306,29 @@ func init() {
 		ImgSrc:      "/img/Yachty-tout.jpg",
 		Tags:        []string{"haha", "hihi"},
 	}
+	marvin2 := User{
+		ID:          2,
+		Name:        "Mikhail2",
+		Email:       "mumeu222@mail.ru2",
+		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Age:         20,
+		Description: "Hahahahaha",
+		ImgSrc:      "/img/Yachty-tout.jpg",
+		Tags:        []string{"haha", "hihi"},
+	}
+	marvin3 := User{
+		ID:          3,
+		Name:        "Mikhail3",
+		Email:       "mumeu222@mail.ru3",
+		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Age:         20,
+		Description: "Hahahahaha",
+		ImgSrc:      "/img/Yachty-tout.jpg",
+		Tags:        []string{"haha", "hihi"},
+	}
 	users[1] = marvin
+	users[2] = marvin2
+	users[3] = marvin3
 }
 
 func main() {
@@ -279,10 +353,11 @@ func main() {
 	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
+	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	mux.PathPrefix("/").Handler(spa)
-	
+
 	srv := &http.Server{
 		Handler:      mux,
 		Addr:         ":80",

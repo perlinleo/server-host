@@ -11,7 +11,7 @@ type JSON struct {
 }
 
 type User struct {
-	ID          uint64   `json:"-"`
+	ID          uint64   `json:"id"`
 	Name        string   `json:"name"`
 	Email       string   `json:"email"`
 	Password    string   `json:"-"`
@@ -33,4 +33,8 @@ func (user User) isCorrectPassword(password string) bool {
 type LoginUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type SwipedUser struct {
+	Id uint64 `json:"id"`
 }
