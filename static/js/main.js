@@ -1,22 +1,22 @@
 const root = document.getElementById('root');
 
 const configApp = {
-  login: {
+  'login': {
     href: '/login',
     name: 'Авторизация',
     open: loginPage,
   },
-  signup: {
+  'signup': {
     href: '/signup',
     name: 'Регистрация',
     open: signupPage,
   },
-  createProfile: {
+  'createProfile': {
     href: '/createProfile',
     name: 'Создать профиль',
     open: createProfilePage,
   },
-  profile: {
+  'profile': {
     href: '/profile',
     name: 'Профиль',
     open: userProfileRender,
@@ -60,8 +60,8 @@ const configApp = {
     link: '/',
     name: 'logging out',
     open: logoutCookie,
-  }
-}
+  },
+};
 
 const emailRegExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 const passwordRegExp = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
@@ -85,9 +85,9 @@ function createCenterContainer() {
 
 
 function loginPageError(error) {
-  errorField = document.getElementsByClassName('login-error')[0]
-  errorField.style.visibility = "visible"
-  errorField.innerHTML = error
+  errorField = document.getElementsByClassName('login-error')[0];
+  errorField.style.visibility = 'visible';
+  errorField.innerHTML = error;
 }
 
 function loginPage() {
@@ -96,8 +96,8 @@ function loginPage() {
   // --------------------------------------------------------
   window.addEventListener('load', (e) => {
     e.preventDefault();
-    loginWithCookie()
-  })
+    loginWithCookie();
+  });
   // --------------------------------------------------------
 
   const header = createCenterContainer();
@@ -112,7 +112,7 @@ function loginPage() {
   const form = document.createElement('form');
   form.classList.add('login-form');
   const errorField = createElementWithClass('div', 'login-error');
-  errorField.innerHTML = "error placeholder";
+  errorField.innerHTML = 'error placeholder';
   const emailInput = createInput('email', 'Почта', 'email');
   emailInput.className = 'form-field-valid';
   emailInput.addEventListener('input', () => {
@@ -120,9 +120,9 @@ function loginPage() {
     if (test) {
       emailInput.className = 'form-field-valid';
     } else {
-      emailInput.className = 'form-field-novalid'
+      emailInput.className = 'form-field-novalid';
     }
-  })
+  });
 
   const passwordInput = createInput('password', 'Пароль', 'password');
   passwordInput.addEventListener('input', () => {
@@ -131,16 +131,16 @@ function loginPage() {
     if (test) {
       passwordInput.className = 'form-field-valid';
     } else {
-      passwordInput.className = 'form-field-novalid'
+      passwordInput.className = 'form-field-novalid';
     }
-  })
+  });
   passwordInput.className = 'form-field-valid';
   window.addEventListener('load', () => {
     const testEmail = emailInput.value.length === 0 || emailRegExp.test(emailInput.value);
     emailInput.className = testEmail ? 'form-field-valid' : 'form-field-novalid';
     const testPassword = passwordInput.value.length === 0 || passwordRegExp.test(passwordInput.value);
     passwordInput.className = testPassword ? 'form-field-valid' : 'form-field-novalid';
-  })
+  });
 
   // кнопка войти
   const submitButton = document.createElement('button');
@@ -161,7 +161,7 @@ function loginPage() {
   submitButton.appendChild(buttonFilling);
 
   const emailIcon = document.createElement('img');
-  emailIcon.src = './svg/email.svg'
+  emailIcon.src = './svg/email.svg';
   emailIcon.classList.add('input-icon');
   const passwordIcon = document.createElement('img');
   passwordIcon.src = './svg/password.svg';
@@ -219,7 +219,7 @@ function loginPage() {
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
     loginWithCredentials(email, password);
-  })
+  });
 
   root.appendChild(formContainer);
   root.appendChild(regLinkContainer);
@@ -247,9 +247,9 @@ function signupPage() {
     if (test) {
       emailInput.className = 'form-field-valid';
     } else {
-      emailInput.className = 'form-field-novalid'
+      emailInput.className = 'form-field-novalid';
     }
-  })
+  });
   const passwordInput = createInput('password', 'Пароль', 'password');
   passwordInput.className = 'form-field-valid';
   passwordInput.addEventListener('input', () => {
@@ -258,9 +258,9 @@ function signupPage() {
     if (test) {
       passwordInput.className = 'form-field-valid';
     } else {
-      passwordInput.className = 'form-field-novalid'
+      passwordInput.className = 'form-field-novalid';
     }
-  })
+  });
 
   const repeatPasswordInput = createInput('password', 'Пароль', 'password');
   repeatPasswordInput.className = 'form-field-valid';
@@ -269,9 +269,9 @@ function signupPage() {
     if (test) {
       repeatPasswordInput.className = 'form-field-valid';
     } else {
-      repeatPasswordInput.className = 'form-field-novalid'
+      repeatPasswordInput.className = 'form-field-novalid';
     }
-  })
+  });
 
   // кнопка зарегестрироваться
   const submitButton = document.createElement('button');
@@ -292,7 +292,7 @@ function signupPage() {
   submitButton.appendChild(buttonFilling);
 
   const emailIcon = document.createElement('img');
-  emailIcon.src = './svg/email.svg'
+  emailIcon.src = './svg/email.svg';
   emailIcon.classList.add('input-icon');
   const passwordIcon = document.createElement('img');
   passwordIcon.src = './svg/password.svg';
@@ -362,31 +362,31 @@ function signupPage() {
     const requestOptions = {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         'email': email,
         'password': password,
         'passwordRepeat': passwordRepeat,
-      })
+      }),
     };
     fetch(`${serverAddress}/api/v1/signup`, requestOptions)
-      .then(response =>
-        response.json().then(data => ({
-          data: data,
-          status: response.status
-        })).then(res => {
-          if (res.status === 200 && res.data.status === 200) {
-            clearRoot();
-            loginPage();
-          } else if (res.data.status === 404) {
-            const userNotFound = document.createElement('span')
-            userNotFound.textContent = 'Вы уже зарегестрированы'
-            userNotFound.style.marginTop = "10px"
-            form.appendChild(userNotFound)
-          }
-        })).catch((error) => console.log(error));
-  })
+        .then((response) =>
+          response.json().then((data) => ({
+            data: data,
+            status: response.status,
+          })).then((res) => {
+            if (res.status === 200 && res.data.status === 200) {
+              clearRoot();
+              loginPage();
+            } else if (res.data.status === 404) {
+              const userNotFound = document.createElement('span');
+              userNotFound.textContent = 'Вы уже зарегестрированы';
+              userNotFound.style.marginTop = '10px';
+              form.appendChild(userNotFound);
+            }
+          })).catch((error) => console.log(error));
+  });
 
   root.appendChild(formContainer);
 }
@@ -400,7 +400,7 @@ loginPage();
 
 root.addEventListener('click', (e) => {
   const {
-    target
+    target,
   } = e;
   if (configApp[target.className]) {
     clearRoot();
@@ -412,7 +412,7 @@ root.addEventListener('click', (e) => {
 
     configApp[target.dataset.section].open();
   }
-})
+});
 
 
 /**
@@ -421,7 +421,7 @@ root.addEventListener('click', (e) => {
  */
 function clickButtons(event) {
   const {
-    target
+    target,
   } = event;
   if (configApp[target.className]) {
     clearRoot();
@@ -594,8 +594,6 @@ function fillUser() {
 }
 
 function fillEdit() {
-
-  
   const divEdit = document.getElementById('editID');
 
   const buttonLogout = document.createElement('button');
@@ -606,12 +604,7 @@ function fillEdit() {
   imgLogout.style.width = '50px';
   imgLogout.style.height = '50px';
   imgLogout.className = 'profile-logout';
-
-  
   buttonLogout.appendChild(imgLogout);
-
-
-
   const buttonEdit = document.createElement('button');
   buttonEdit.className = 'menu-icon';
   divEdit.appendChild(buttonEdit);
@@ -622,8 +615,6 @@ function fillEdit() {
   imgEdit.alt = 'edit';
   imgEdit.className = 'profile-edit';
   buttonEdit.appendChild(imgEdit);
-  
-  
 }
 
 function fillCard() {
@@ -739,16 +730,16 @@ function renderFeed() {
   document.addEventListener('touchstart', handleTouchStart, false);
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('touchend', handleTouchEnd, false);
-  
+
   const currentobj = sample[counter];
-  if(!currentobj) {
+  if (!currentobj) {
     root.innerHTML='';
-    const outOfCards = createElementWithClass('div','out-of-cards');
-    outOfCards.innerText = 'Карточки кончились'
+    const outOfCards = createElementWithClass('div', 'out-of-cards');
+    outOfCards.innerText = 'Карточки кончились';
     root.appendChild(outOfCards);
     addMenu('feed');
-    return
-  } 
+    return;
+  }
   const card = createElementWithClass('div', 'card-main');
   const image = document.createElement('img');
   image.src = currentobj.photoSrc;
@@ -807,7 +798,7 @@ function remove(cardToRemove) {
  */
 function handleTouchStart(event) {
   const {
-    touches
+    touches,
   } = event;
   currentCard.style.animation = '';
   x1 = touches[0].clientX;
@@ -859,7 +850,7 @@ function moveRight(element, diffX, diffY) {
  */
 function handleTouchMove(event) {
   const {
-    touches
+    touches,
   } = event;
   x = touches[0].clientX;
   y = touches[0].clientY;
@@ -901,12 +892,12 @@ function handleTouchEnd(event) {
   }
   if (x1 - x < -200) {
     currentCard.style.animation = 'liked 1s ease 1';
-    const cardToRemove = currentCard
+    const cardToRemove = currentCard;
     setTimeout(remove(cardToRemove), 1000);
-    
-    
-    const id = sample[counter].id
-    console.log(id)
+
+
+    const id = sample[counter].id;
+    console.log(id);
     setTimeout(swipeUser(id), 1000);
     counter++;
 
@@ -914,18 +905,18 @@ function handleTouchEnd(event) {
     x = null;
   } else if (x1 - x > 200) {
     currentCard.style.animation = 'liked 1s ease 1';
-    const cardToRemove = currentCard
+    const cardToRemove = currentCard;
     setTimeout(remove(cardToRemove), 1000);
-    const id = sample[counter].id
- 
-    console.log(id)
+    const id = sample[counter].id;
+
+    console.log(id);
     setTimeout(swipeUser(id), 1000);
     counter++;
     x1 = null;
     x = null;
   } else {
     const {
-      target
+      target,
     } = event;
     if (!(target.class === 'expand-class' || target.alt === 'shrink')) {
       previousCard.style.animation = 'shrinkSecondary 1s linear 1';

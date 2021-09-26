@@ -347,20 +347,20 @@ func main() {
 		sessionDB: MockSessionDB{},
 	}
 
-	mux := mux.NewRouter()
+	router := mux.NewRouter()
 
-	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
-	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
-	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
+	router.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
+	router.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	router.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
+	router.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
+	router.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	mux.PathPrefix("/").Handler(spa)
+	router.PathPrefix("/").Handler(spa)
 
 	srv := &http.Server{
-		Handler:      mux,
-		Addr:         ":80",
+		Handler:      router,
+		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
