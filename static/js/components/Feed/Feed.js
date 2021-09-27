@@ -59,7 +59,7 @@ function createActionElement(icon, action) {
         
         
         const currentobj = window.Feed.getCurrentProfile();
-        console.log(currentobj);
+    
         if(!currentobj) {
           root.innerHTML='';
           const outOfCards = this.#createElementWithClass('div','out-of-cards');

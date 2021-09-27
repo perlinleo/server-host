@@ -45,8 +45,8 @@ loginWithCookie(callback=noop){
         if (res.status === 200 && res.data.status === 200) {
           
           this.#setUserProfile(res.data.body);
-          console.log(this.#userData.id)
-          window.Feed.feedGet(this.#userData.id)
+          
+          window.Feed.getNextUser(this.#userData.id)
           
           
           // !!! cring
@@ -83,7 +83,7 @@ loginWithCredentials(email, password, callback=noop){
             if (res.status === 200 && res.data.status === 200) {
               this.loginWithCookie(callback);
             } else if (res.data.status === 404) {
-              console.log(res.data);
+             
               //loginPageError("User not found")
             }
           })).catch((error) => console.log(error));

@@ -35,10 +35,8 @@ class Feed {
   }
 
 
-  feedGet(id,callback) {
-    return this.#getNextUser(id,callback);
-  }
-  #getNextUser(id, callback=noop) {
+  
+  getNextUser(id, callback=noop) {
     const requestOptions = {
       method: 'POST',
       headers: {
@@ -55,12 +53,13 @@ class Feed {
           data: data,
           status: response.status
         })).then(res => {
+          
           if (res.data.status === 200) {
             this.#addProfile(res.data.body)
           
             callback(res.data, res.status)
           } else if (res.data.status === 404) {
-            alert("end of profiles");
+            this.#counter++;
           }
             
 
