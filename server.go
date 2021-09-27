@@ -32,7 +32,7 @@ func setupResponse(w *http.ResponseWriter, req *http.Request) {
 	(*w).Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
 	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie, Access-Control-Allow-Credentials, Access-Control-Allow-Origin")
 }
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +108,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Value:    md5CookieValue,
 			Expires:  expiration,
 			Secure:   false,
+			SameSite: http.SameSiteNoneMode,
 			HttpOnly: true,
 		}
 
