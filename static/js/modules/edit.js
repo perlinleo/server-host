@@ -1,53 +1,54 @@
-const signupFetch = (form, emailInput, passwordInput, repeatPasswordInput) => {
+const editFetch = (form, inputName, inputDate, inputDesc, tags) => {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const testEmail = emailRegExp.test(emailInput.value);
-        const testPassword = passwordRegExp.test(passwordInput.value);
-        const testPasswordRepeat = passwordInput.value === repeatPasswordInput.value;
+        const testName = inputName.value.length === 0;
+        const testDate = inputDate.value.toString().length === 0;
+        const testDesc = inputDesc.value.length === 0;
 
-        if (!testEmail) {
-            emailInput.className = 'form-field-novalid';
+        if (!testName) {
+            inputName.className = 'form-field-edit-novalid text-without-icon';
         }
 
-        if (!testPassword) {
-            passwordInput.className = 'form-field-novalid';
+        if (!testDate) {
+            inputDate.className = 'form-field-edit-novalid text-with-icon';
         }
 
-        if (!testPasswordRepeat) {
-            repeatPasswordInput.className = 'form-field-novalid';
+        if (!testDesc) {
+            inputDesc.className = 'form-field-edit-novalid';
         }
 
-        if (!testEmail || !testPassword || !testPasswordRepeat) {
+        if (!testName || !testDate || !testDesc) {
             return;
         }
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
+        const name = inputName.value.trim();
+        const date = inputDate.value.trim();
+        const desc = inputDesc.value.trim();
         const requestOptions = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                'email': email,
-                'password': password,
+                'name': name,
+                'age': date,
+                'description': desc,
+                'tags': tags
             })
         };
-        fetch(`${localAddress}/api/v1/signup`, requestOptions)
+        fetch(`${localAddress}/api/v1/edit`, requestOptions)
             .then(response =>
                 response.json().then(data => ({
                     data: data,
                     status: response.status
                 })).then(res => {
-                    console.log(res.data.status)
-                    console.log(res.data.body)
                     if (res.status === 200 && res.data.status === 200) {
                         clearRoot();
                         setUserProfile(res.data.body);
                         renderEdit();
                     } else if (res.data.status === 404) {
                         const userNotFound = document.createElement('span')
-                        userNotFound.textContent = 'Вы уже зарегестрированы'
+                        userNotFound.textContent = 'Неправильный ввод'
                         userNotFound.style.marginTop = "10px"
                         form.appendChild(userNotFound)
                     }

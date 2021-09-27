@@ -9,15 +9,15 @@ const loginWithCookie = () => {
       'Content-Type': 'application/json'
     },
   };
-  
-  fetch(`${serverAddress}/api/v1/currentuser`, requestOptions)
+
+  fetch(`${localAddress}/api/v1/currentuser`, requestOptions)
     .then(response =>
       response.json().then(data => ({
         data: data,
         status: response.status
       })).then(res => {
-        console.log(res.data)
-       
+        // console.log(res.data)
+
         if (res.status === 200 && res.data.status === 200) {
           clearRoot();
 
@@ -25,7 +25,7 @@ const loginWithCookie = () => {
           userProfileRender();
           addMenu('profile');
         }
-        console.log(res.data);
+        // console.log(res.data);
         // if (res.data.status === 'ok') {
         //     profilePage();
         // }
@@ -34,38 +34,42 @@ const loginWithCookie = () => {
 
 }
 
-function loginWithCredentials(email, password){
-    const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          'email': email,
-          'password': password,
-        })
-      };
-      fetch(`${serverAddress}/api/v1/login`, requestOptions)
-        .then(response =>
-          response.json().then(data => ({
-            data: data,
-            status: response.status
-          })).then(res => {
-            if (res.status === 200 && res.data.status === 200) {
-              loginWithCookie();
-            } else if (res.data.status === 404) {
-              loginPageError("User not found")
-            }
-          })).catch((error) => console.log(error));
+function loginWithCredentials(email, password) {
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      'email': email,
+      'password': password,
+    })
+  };
+  fetch(`${localAddress}/api/v1/login`, requestOptions)
+    .then(response =>
+      response.json().then(data => ({
+        data: data,
+        status: response.status
+      })).then(res => {
+        if (res.status === 200 && res.data.status === 200) {
+          loginWithCookie();
+        } else if (res.data.status === 404) {
+          loginPageError("User not found")
+        }
+      })).catch((error) => console.log(error));
 }
 
 
 
-function logoutCookie(){
-    
-    const requestOptions = {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      };
-      fetch(`${serverAddress}/api/v1/logout`, requestOptions)
-          clearRoot();
-         
+function logoutCookie() {
+
+  const requestOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+  };
+  fetch(`${localAddress}/api/v1/logout`, requestOptions)
+  clearRoot();
+
 }

@@ -54,7 +54,7 @@ const configApp = {
   'profile-edit': {
     link: '/profile/edit',
     name: 'edit profile',
-    open: notDoneYet,
+    open: renderEdit,
   },
   'profile-logout': {
     link: '/',
@@ -82,6 +82,7 @@ function createCenterContainer() {
 
   return divContainer;
 }
+
 
 
 function loginPageError(error) {
@@ -199,54 +200,7 @@ function loginPage() {
   regLink.dataset.section = 'signup';
   regLinkContainer.appendChild(regLink);
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const testEmail = emailRegExp.test(emailInput.value);
-    const testPassword = passwordRegExp.test(passwordInput.value);
-
-    if (!testEmail) {
-      emailInput.className = 'form-field-novalid';
-    }
-
-    if (!testPassword) {
-      passwordInput.className = 'form-field-novalid';
-    }
-    if (!testEmail || !testPassword) {
-      return;
-    }
-
-    console.log("FLDMSKLF");
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        'email': email,
-        'password': password,
-      })
-    };
-    fetch("http://95.84.192.140/api/v1/login", requestOptions)
-      .then(response =>
-        response.json().then(data => ({
-          data: data,
-          status: response.status
-        })).then(res => {
-          if (res.status === 200 && res.data.status === 200) {
-            clearRoot();
-            renderFeed();
-            addMenu('feed');
-          } else if (res.data.status === 404) {
-            const userNotFound = document.createElement('span')
-            userNotFound.textContent = 'Вы не зарегестрированы'
-            userNotFound.style.marginTop = "10px"
-            form.appendChild(userNotFound)
-          }
-        })).catch((error) => console.log(error));
-  })
+  loginFetch(form, emailInput, passwordInput);
 
   root.appendChild(formContainer);
   root.appendChild(regLinkContainer);
@@ -361,59 +315,7 @@ function signupPage() {
   regLink.textContent = 'Зарегестрироваться';
   regLink.dataset.section = 'createProfile';
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const testEmail = emailRegExp.test(emailInput.value);
-    const testPassword = passwordRegExp.test(passwordInput.value);
-    const testPasswordRepeat = passwordInput.value === repeatPasswordInput.value;
-
-    if (!testEmail) {
-      emailInput.className = 'form-field-novalid';
-    }
-
-    if (!testPassword) {
-      passwordInput.className = 'form-field-novalid';
-    }
-
-    if (!testPasswordRepeat) {
-      repeatPasswordInput.className = 'form-field-novalid';
-    }
-
-    if (!testEmail || !testPassword || !testPasswordRepeat) {
-      return;
-    }
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    const passwordRepeat = repeatPasswordInput.value.trim();
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        'email': email,
-        'password': password,
-        'passwordRepeat': passwordRepeat,
-      })
-    };
-    fetch("http://95.84.192.140/api/v1/signup", requestOptions)
-      .then(response =>
-        response.json().then(data => ({
-          data: data,
-          status: response.status
-        })).then(res => {
-          if (res.status === 200 && res.data.status === 200) {
-            clearRoot();
-            loginPage();
-          } else if (res.data.status === 404) {
-            const userNotFound = document.createElement('span')
-            userNotFound.textContent = 'Вы уже зарегестрированы'
-            userNotFound.style.marginTop = "10px"
-            form.appendChild(userNotFound)
-          }
-        })).catch((error) => console.log(error));
-  })
+  signupFetch(form, emailInput, passwordInput, repeatPasswordInput);
 
   root.appendChild(formContainer);
 }
@@ -480,7 +382,7 @@ let previousCard2;
 function fillCardMain() {
   const cardMain = document.getElementById('cardMainID');
 
-  const lol = sample[counter];
+  const lol = profile;
 
   const img = document.createElement('img');
   img.src = `${lol.photoSrc}`;
@@ -513,7 +415,7 @@ function fillCardMain() {
   for (const tag in lol.tags) {
     if (Object.prototype.hasOwnProperty.call(lol.tags, tag)) {
       const buttonTag = document.createElement('div');
-      buttonTag.className = 'tag';
+      buttonTag.className = 'tag-edit';
       buttonTag.innerHTML = `${lol.tags[tag]}`;
       divTags.appendChild(buttonTag);
     }
@@ -623,7 +525,7 @@ function fillUser() {
 
 function fillEdit() {
 
-  
+
   const divEdit = document.getElementById('editID');
 
   const buttonLogout = document.createElement('button');
@@ -635,7 +537,7 @@ function fillEdit() {
   imgLogout.style.height = '50px';
   imgLogout.className = 'profile-logout';
   imgLogout.alt = 'logout';
-  
+
   buttonLogout.appendChild(imgLogout);
 
 
@@ -650,8 +552,8 @@ function fillEdit() {
   imgEdit.alt = 'edit';
   imgEdit.className = 'profile-edit';
   buttonEdit.appendChild(imgEdit);
-  
-  
+
+
 }
 
 function fillCard() {
@@ -761,20 +663,20 @@ function clearRoot() {
 /**
  * Рендерит ленту с профилями
  */
-function renderFeed() {
+function renderFeed(profile) {
   document.addEventListener('click', clickButtons, false);
   document.addEventListener('touchstart', handleTouchStart, false);
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('touchend', handleTouchEnd, false);
-  const currentobj = sample[counter];
-  if(!currentobj) {
-    root.innerHTML='';
-    const outOfCards = createElementWithClass('div','out-of-cards');
+  const currentobj = profile;
+  if (!currentobj) {
+    root.innerHTML = '';
+    const outOfCards = createElementWithClass('div', 'out-of-cards');
     outOfCards.innerText = 'Карточки кончились'
     root.appendChild(outOfCards);
     addMenu('feed');
     return
-  } 
+  }
   const card = createElementWithClass('div', 'card-main');
   const image = document.createElement('img');
   image.src = currentobj.photoSrc;
@@ -819,24 +721,24 @@ function renderFeed() {
  * Рендерит следующую карточку
  */
 function nextCharacter() {
-  const currentobj = sample[counter];
-  if(!currentobj){
+  const currentobj = profile;
+  if (!currentobj) {
     const card1 = document.getElementsByClassName('card3')[0]
-    if (card1) card1.style.animation='liked 1s ease 1'
+    if (card1) card1.style.animation = 'liked 1s ease 1'
     const card2 = document.getElementsByClassName('card3')[1]
-    if (card2) card2.style.animation='liked 1s ease 1'
+    if (card2) card2.style.animation = 'liked 1s ease 1'
     const card3 = document.getElementsByClassName('card2')[0]
-    if (card3) card3.style.animation='liked 1s ease 1'
+    if (card3) card3.style.animation = 'liked 1s ease 1'
     const card4 = document.getElementsByClassName('card')[0]
-    if(card4) card4.style.animation='liked 1s ease 1'
-    setTimeout(()=> {
-      root.innerHTML='';
-      const outOfCards = createElementWithClass('div','out-of-cards');
+    if (card4) card4.style.animation = 'liked 1s ease 1'
+    setTimeout(() => {
+      root.innerHTML = '';
+      const outOfCards = createElementWithClass('div', 'out-of-cards');
       outOfCards.innerText = 'Карточки кончились'
       root.appendChild(outOfCards);
       addMenu('feed');
-      
-    },1000);
+
+    }, 1000);
     return;
   }
   const card = createElementWithClass('div', 'card-main');
@@ -1035,4 +937,193 @@ function handleTouchEnd(event) {
       setTimeout(returnToStart, 1000);
     }
   }
+}
+
+function createInputEdit(type, name, place, className) {
+  const input = document.createElement('input');
+  input.type = type;
+  input.name = name;
+  input.placeholder = place;
+  input.className = className;
+
+  return input
+}
+
+function renderEdit() {
+
+  const root = document.getElementById('root');
+
+  const form = document.createElement('form');
+  form.className = 'edit-form';
+  const saveDiv = document.createElement('div');
+  saveDiv.className = 'center-container';
+  saveDiv.style = 'padding-top: 20%;';
+  root.appendChild(form);
+  root.appendChild(saveDiv);
+
+  // fillForm
+  const divName = document.createElement('div');
+  divName.className = 'inputEdit'
+  const inputName = document.createElement('textarea');
+  inputName.className = 'form-field text-without-icon';
+  inputName.textContent = user.firstName;
+  inputName.addEventListener('input', () => {
+    const test = inputName.value.length === 0;
+    if (test) {
+      inputName.className = 'form-field-edit-novalid text-without-icon';
+    } else {
+      inputName.className = 'form-field text-without-icon'
+    }
+  })
+  divName.appendChild(inputName);
+
+  const divDate = document.createElement('div');
+  divDate.className = 'inputEdit'
+  const inputDate = createInputEdit('date', 'calendar', '20.06.2001', 'form-field text-with-icon');
+  inputDate.addEventListener('input', () => {
+    const test = inputDate.value.toString().length === 0;
+    if (test) {
+      inputDate.className = 'form-field-edit-novalid text-with-icon';
+    } else {
+      inputDate.className = 'form-field text-with-icon'
+    }
+  })
+  divDate.appendChild(inputDate);
+
+  const divDesc = document.createElement('div');
+  divDesc.className = 'inputEdit'
+  const desc = document.createElement('textarea');
+  desc.className = 'form-field-desc text-desc'
+  desc.textContent = user.text;
+
+  desc.addEventListener('input', () => {
+    const test = desc.value.length === 0;
+    if (test) {
+      desc.className = 'form-field-edit-novalid text-desc';
+    } else {
+      desc.className = 'form-field text-desc'
+    }
+  })
+  divDesc.appendChild(desc);
+
+  const divTags = document.createElement('div');
+  divTags.className = 'inputEdit';
+
+  const TagsContainer = document.createElement('div');
+  TagsContainer.className = 'tag-container-edit';
+  TagsContainer.id = 'tagsID';
+
+  const buttonAddTags = document.createElement('button');
+  buttonAddTags.id = 'addID';
+  buttonAddTags.className = 'add';
+
+  divTags.appendChild(TagsContainer);
+  divTags.appendChild(buttonAddTags);
+
+  const divSelect = document.createElement('div');
+  divSelect.className = 'selectBox';
+
+  const divImgs = document.createElement('div');
+  divImgs.className = 'inputEdit';
+  divImgs.innerHTML = `
+<div class="im-container">
+  <div style="position: relative;">
+      <img src="../img/Elon_Musk_2015.jpg" class="im">
+      <button class=removeImg></button>
+  </div>
+  <div style="position: relative;">
+      <img src="../img/Elon_Musk_2015.jpg" class="im">
+      <button class=removeImg></button>
+  </div>
+  <div style="position: relative;">
+      <img src="../img/Elon_Musk_2015.jpg" class="im">
+      <button class=removeImg></button>
+  </div>
+</div>
+<button class="add"></button>
+`
+  form.appendChild(divName);
+  form.appendChild(divDate);
+  form.appendChild(divDesc);
+  form.appendChild(divTags);
+  form.appendChild(divSelect);
+  form.appendChild(divImgs);
+  ///////////////////////
+
+  //fillSave
+  const buttonSave = document.createElement('button');
+  buttonSave.type = 'submit';
+  buttonSave.className = 'login-button';
+
+  const div = document.createElement('div');
+  div.className = 'center-container';
+
+  const span = document.createElement('span');
+  span.className = 'edit-button-text';
+  span.textContent = 'Сохранить';
+
+  const imgNext = document.createElement('img');
+  imgNext.src = '../icons/button_next_black.svg';
+  imgNext.className = 'svg-next-edit'
+
+  div.appendChild(span);
+  div.appendChild(imgNext);
+  buttonSave.appendChild(div);
+
+  saveDiv.appendChild(buttonSave);
+  //////////////////////////
+
+  const divSelectBox = document.getElementsByClassName('selectBox')[0];
+
+  const selectBoxItems = ['anime', 'gaming', 'soccer', 'music'];
+  const existsSelectBoxItems = user.tags;
+
+  const selectBox = document.createElement('select');
+  selectBox.className = 'dropdown-select';
+  const selectItem = document.createElement('option');
+  selectItem.textContent = 'Тэги';
+  selectItem.value = 'Тэги';
+  selectItem.disabled = true;
+  selectBox.appendChild(selectItem);
+  selectBoxItems.forEach(function (item, i, selectBoxItems) {
+    const selectItem = document.createElement('option');
+    selectItem.textContent = item;
+    selectItem.value = item;
+    selectBox.appendChild(selectItem);
+  });
+
+  const tagsCont = document.getElementById('tagsID');
+
+  selectBox.onchange = function () {
+    divSelectBox.innerHTML = '';
+    const {
+      value
+    } = selectBox;
+    if (existsSelectBoxItems.indexOf(value) != -1) {
+      return
+    }
+    const tag = document.createElement('div');
+    tag.className = 'tag-edit';
+    tag.textContent = value;
+    tagsCont.appendChild(tag);
+    tag.disabled = true;
+    existsSelectBoxItems.push(value)
+  }
+
+
+  editFetch(form, inputName, inputDate, desc, existsSelectBoxItems)
+
+  root.addEventListener('click', function (e) {
+    e.preventDefault();
+    const {
+      target
+    } = e;
+
+    if (target.tagName.toLowerCase() === 'option') {
+      divSelectBox.innerHTML = '';
+    }
+    if (target.id === 'addID') {
+      divSelectBox.appendChild(selectBox);
+    }
+  });
 }

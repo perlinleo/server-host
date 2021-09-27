@@ -21,11 +21,13 @@ const user = {
   ],
 };
 
-function setUserProfile(data){
-  console.log(data.name)
-  user.firstName=data.name;
-  user.age = data.age;
-  user.text = data.description;
-  user.photoSrc = data.imgSrc
-  user.tags = data.tags
+function setUserProfile(body) {
+  user.id = body.id;
+  user.firstName = body.name;
+  user.age = body.age;
+  user.photoSrc = body.imgSrc;
+  user.colorFrom = 'grey';
+  user.colorTo = 'black';
+  user.text = body.description;
+  user.tags = body.tags;
 }

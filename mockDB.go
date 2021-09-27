@@ -31,6 +31,37 @@ func (MockDB) getUserModel(email string) (User, error) {
 	return currentUser, nil
 }
 
+func (MockDB) insertUserModel(user User) (int, error) {
+
+	newID := len(users) + 1
+
+	users[uint64(newID)] = user
+
+	return newID, nil
+}
+
+func (MockDB) updateUserModel(user User) (User, error) {
+	if len(users) == 0 {
+		return User{}, errors.New("users is empty map")
+	}
+
+	currentUser := User{}
+	okUser := false
+	for _, value := range users {
+		if value.Email == user.Email {
+			currentUser = value
+			okUser = true
+		}
+	}
+	if !okUser {
+		return User{}, errors.New("User not found")
+	}
+
+	currentUser = user
+
+	return currentUser, nil
+}
+
 type MockSessionDB struct {
 }
 

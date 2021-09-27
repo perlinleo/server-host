@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	StatusOK         = 200
-	StatusBadRequest = 400
-	StatusNotFound   = 404
+	StatusOK                  = 200
+	StatusBadRequest          = 400
+	StatusNotFound            = 404
 	StatusInternalServerError = 500
 )
 
@@ -32,8 +32,6 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
-	fmt.Println("vhod")
-	fmt.Println("vhod")
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
 		resp.Status = StatusNotFound
@@ -74,14 +72,14 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifiableUser, err := env.db.getUserModel(logUserData.Email)
 	if err != nil {
-		resp.Status = StatusInternalServerError
+		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
 	}
 
 	status := StatusOK
 	if identifiableUser.isCorrectPassword(logUserData.Password) {
-		expiration := time.Now().Add(10 * time.Hour)
+		expiration := time.Now().Add(24 * time.Hour)
 
 		data := logUserData.Password + time.Now().String()
 		md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
@@ -106,6 +104,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		status = StatusNotFound
 	}
 
+	resp.Body = identifiableUser
 	resp.Status = status
 	sendResp(resp, &w)
 }
@@ -137,19 +136,22 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 
 	status := StatusOK
 
-	newID := len(users) + 1
 	newEmail := logUserData.Email
 	newPassword := logUserData.Password
 
 	md5NewPassword := fmt.Sprintf("%x", md5.Sum([]byte(newPassword)))
 
 	newUser := User{
-		ID:       uint64(newID),
 		Email:    newEmail,
 		Password: md5NewPassword,
 	}
 
-	users[uint64(newID)] = newUser
+	_, err = env.db.insertUserModel(newUser)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
 
 	// куки
 	expiration := time.Now().Add(10 * time.Hour)
@@ -175,15 +177,67 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &cookie)
 	// куки
 
+	resp.Body = newUser
+	resp.Status = status
+	sendResp(resp, &w)
+}
+
+func (env *Env) editHandler(w http.ResponseWriter, r *http.Request) {
+	var resp JSON
+
+	byteReq, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	var UserData User
+	err = json.Unmarshal(byteReq, &UserData)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	status := StatusOK
+
+	_, updateError := env.db.updateUserModel(UserData)
+	if updateError != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, &w)
+		return
+	}
+
+	// куки
+	expiration := time.Now().Add(10 * time.Hour)
+
+	data := UserData.Password + time.Now().String()
+	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
+
+	cookie := http.Cookie{
+		Name:     "sessionId",
+		Value:    md5CookieValue,
+		Expires:  expiration,
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	updateUser, updateError := env.db.updateUserModel(UserData)
+
+	http.SetCookie(w, &cookie)
+	// куки
+
+	resp.Body = updateUser
 	resp.Status = status
 	sendResp(resp, &w)
 }
 
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("sessionId")
-	
+
 	if err == http.ErrNoCookie {
-		
+
 		sendResp(JSON{Status: StatusNotFound}, &w)
 		return
 	}
@@ -235,6 +289,8 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type Env struct {
 	db interface {
 		getUserModel(string) (User, error)
+		insertUserModel(User) (int, error)
+		updateUserModel(User) (User, error)
 	}
 	sessionDB interface {
 		getUserByCookie(sessionCookie string) (User, error)
@@ -278,11 +334,12 @@ func main() {
 	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
 	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
+	mux.HandleFunc("/api/v1/edit", env.editHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	mux.PathPrefix("/").Handler(spa)
-	
+
 	srv := &http.Server{
 		Handler:      mux,
 		Addr:         ":80",

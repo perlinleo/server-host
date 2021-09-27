@@ -1,9 +1,8 @@
-const signupFetch = (form, emailInput, passwordInput, repeatPasswordInput) => {
+const loginFetch = (form, emailInput, passwordInput) => {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         const testEmail = emailRegExp.test(emailInput.value);
         const testPassword = passwordRegExp.test(passwordInput.value);
-        const testPasswordRepeat = passwordInput.value === repeatPasswordInput.value;
 
         if (!testEmail) {
             emailInput.className = 'form-field-novalid';
@@ -12,12 +11,7 @@ const signupFetch = (form, emailInput, passwordInput, repeatPasswordInput) => {
         if (!testPassword) {
             passwordInput.className = 'form-field-novalid';
         }
-
-        if (!testPasswordRepeat) {
-            repeatPasswordInput.className = 'form-field-novalid';
-        }
-
-        if (!testEmail || !testPassword || !testPasswordRepeat) {
+        if (!testEmail || !testPassword) {
             return;
         }
 
@@ -33,21 +27,20 @@ const signupFetch = (form, emailInput, passwordInput, repeatPasswordInput) => {
                 'password': password,
             })
         };
-        fetch(`${localAddress}/api/v1/signup`, requestOptions)
+        fetch(`${localAddress}/api/v1/login`, requestOptions)
             .then(response =>
                 response.json().then(data => ({
                     data: data,
                     status: response.status
                 })).then(res => {
-                    console.log(res.data.status)
-                    console.log(res.data.body)
                     if (res.status === 200 && res.data.status === 200) {
                         clearRoot();
                         setUserProfile(res.data.body);
-                        renderEdit();
+                        renderFeed();
+                        addMenu('feed');
                     } else if (res.data.status === 404) {
                         const userNotFound = document.createElement('span')
-                        userNotFound.textContent = 'Вы уже зарегестрированы'
+                        userNotFound.textContent = 'Вы не зарегестрированы'
                         userNotFound.style.marginTop = "10px"
                         form.appendChild(userNotFound)
                     }
