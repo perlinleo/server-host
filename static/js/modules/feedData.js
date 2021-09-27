@@ -1,0 +1,80 @@
+/* eslint-disable indent */
+/* eslint-disable no-unused-vars */
+/* eslint-disable prefer-const */
+
+
+(function(){
+
+
+const noop = () => {};
+
+
+
+class Feed {
+  
+  #counter = 0;
+  #feedData = [];
+
+
+
+  #addProfile(data){
+    this.#feedData[this.#counter] = Object()
+    this.#feedData[this.#counter].id=data.id;
+    this.#feedData[this.#counter].firstName=data.name;
+    this.#feedData[this.#counter].age=data.age;
+    this.#feedData[this.#counter].photoSrc=data.imgSrc;
+    this.#feedData[this.#counter].colorFrom='grey';
+    this.#feedData[this.#counter].colorTo='black';
+    this.#feedData[this.#counter].text=data.description;
+    this.#feedData[this.#counter].tags=data.tags;
+    this.#counter++;
+  }
+
+  getCurrentProfile(){
+    return this.#feedData[this.#counter-1];
+  }
+
+
+  feedGet(id,callback) {
+    return this.#getNextUser(id,callback);
+  }
+  #getNextUser(id, callback=noop) {
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'id': id,
+      })
+    };
+    
+    fetch(`${serverAddress}/api/v1/nextswipeuser`, requestOptions)
+      .then(response =>
+        response.json().then(data => ({
+          data: data,
+          status: response.status
+        })).then(res => {
+          this.#addProfile(res.data.body)
+          console.log(this.#feedData);
+          callback(res.data, res.status)
+
+
+          //cringe
+         
+          // if (res.data.status === 200) {
+          //   // root.innerHTML = '';
+          //   // addProfile(res.data.body)
+          //   // renderFeed();
+          //   // addMenu('feed');
+          // } else if (res.data.status === 404) {
+          //   root.innerHTML = '';
+          //   renderFeed();
+          //   addMenu('feed');
+          // }
+        })).catch((error) => console.log(error));
+
+  }
+  }
+  window.Feed = new Feed();
+})();

@@ -1,10 +1,39 @@
-const loginWithCookie = () => {
+
+
+
+
+
+(function(){
+
+
+const noop = () => {};
+
+
+class User {
+  #userData = {};
+
+#setUserProfile(data){
+  this.#userData = Object();
+  this.#userData.id=data.id;
+  this.#userData.firstName=data.name;
+  this.#userData.age = data.age;
+  this.#userData.text = data.description;
+  this.#userData.photoSrc = data.imgSrc
+  this.#userData.tags = data.tags
+}
+
+getUserData(){
+  return this.#userData;
+}
+
+loginWithCookie(callback=noop){
   const requestOptions = {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
     },
   };
+
   
   fetch(`${serverAddress}/api/v1/currentuser`, requestOptions)
     .then(response =>
@@ -14,10 +43,17 @@ const loginWithCookie = () => {
       })).then(res => {
        
         if (res.status === 200 && res.data.status === 200) {
-          clearRoot();
-
-          setUserProfile(res.data.body);
-          swipeUser(user.id)
+          
+          this.#setUserProfile(res.data.body);
+          console.log(this.#userData.id)
+          window.Feed.feedGet(this.#userData.id)
+          
+          
+          // !!! cring
+          
+          
+          setTimeout(callback, 10);
+          // swipeUser(user.id)
           // userProfileRender();
           
         }
@@ -29,7 +65,7 @@ const loginWithCookie = () => {
 
 }
 
-function loginWithCredentials(email, password){
+loginWithCredentials(email, password, callback=noop){
     const requestOptions = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,16 +81,17 @@ function loginWithCredentials(email, password){
             status: response.status
           })).then(res => {
             if (res.status === 200 && res.data.status === 200) {
-              loginWithCookie();
+              this.loginWithCookie(callback);
             } else if (res.data.status === 404) {
-              loginPageError("User not found")
+              console.log(res.data);
+              //loginPageError("User not found")
             }
           })).catch((error) => console.log(error));
 }
 
 
 
-function logoutCookie(){
+logoutCookie(callback=noop){
     
     const requestOptions = {
         method: 'GET',
@@ -62,11 +99,11 @@ function logoutCookie(){
       };
       fetch(`${serverAddress}/api/v1/logout`, requestOptions).then(response =>
       { 
-        
-        clearRoot();
-        
-        loginPage();   
+        callback()
       }
     )
       
 }
+}
+  window.User = new User();
+})();
