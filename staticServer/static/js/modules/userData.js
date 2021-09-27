@@ -28,6 +28,7 @@ loginWithCookie(callback=noop) {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   };
 
 
@@ -65,6 +66,7 @@ loginWithCredentials(email, password, callback=noop) {
       'email': email,
       'password': password,
     }),
+    credentials: 'include',
   };
   fetch(`${serverAddress}/api/v1/login`, requestOptions)
       .then((response) =>
@@ -86,6 +88,7 @@ logoutCookie(callback=noop) {
   const requestOptions = {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
   };
   fetch(`${serverAddress}/api/v1/logout`, requestOptions).then((response) => {
     callback();

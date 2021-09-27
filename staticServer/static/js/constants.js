@@ -1,6 +1,6 @@
 // Deploy-server
 // eslint-disable-next-line no-unused-vars
-const serverAddress = 'http://95.84.192.140';
+const serverAddress = 'https://95.84.192.140:8080';
 
 
 // Data-validation

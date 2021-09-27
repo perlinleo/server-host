@@ -170,6 +170,7 @@ export default class SignupComponent {
             'password': password,
             'passwordRepeat': passwordRepeat,
           }),
+          credentials: 'include',
         };
         fetch(`${serverAddress}/api/v1/signup`, requestOptions)
             .then((response) =>

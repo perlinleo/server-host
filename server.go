@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -32,6 +30,17 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
+func setupCORSResponse(w *http.ResponseWriter, r *http.Request) {
+	(*w).Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie, Access-Control-Allow-Credentials, Access-Control-Allow-Origin")
+}
+
+func (env *Env) corsHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+}
+
 func createSessionCookie(user LoginUser) http.Cookie {
 	expiration := time.Now().Add(10 * time.Hour)
 
@@ -50,6 +59,8 @@ func createSessionCookie(user LoginUser) http.Cookie {
 }
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 	session, err := r.Cookie("sessionId")
 	if err != nil {
@@ -72,6 +83,8 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
@@ -116,6 +129,8 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
@@ -162,6 +177,8 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	session, err := r.Cookie("sessionId")
 
 	if err != nil {
@@ -180,6 +197,8 @@ func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 
 	// get current user by cookie
@@ -232,40 +251,6 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp.Body = nextUser
 	
 	sendResp(resp, &w)
-}
-
-type spaHandler struct {
-	staticPath string
-	indexPath  string
-}
-
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// get the absolute path to prevent directory traversal
-	path, err := filepath.Abs(r.URL.Path)
-	if err != nil {
-		// if we failed to get the absolute path respond with a 400 bad request
-		// and stop
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
-
-	// check whether a file exists at the given path
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		// file does not exist, serve index.html
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-		return
-	} else if err != nil {
-		// if we got an error (that wasn't that the file doesn't exist) stating the
-		// file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// otherwise, use http.FileServer to serve the static dir
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
 type Env struct {
@@ -337,16 +322,6 @@ func init() {
 }
 
 func main() {
-	/*db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	env := &Env{
-		db: ModelsDB{DB: db},
-	}
-	*/
-
 	env := &Env{
 		db:        db, // NewMockDB()
 		sessionDB: NewSessionDB(),
@@ -354,6 +329,7 @@ func main() {
 
 	router := mux.NewRouter()
 
+	router.PathPrefix("/api/v1/").HandlerFunc(env.corsHandler).Methods("OPTIONS")
 	router.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
 	router.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	//router.HandleFunc("/api/v1/createprofile", env.loginHandler).Methods("POST")
@@ -361,15 +337,12 @@ func main() {
 	router.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 	router.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
-	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	router.PathPrefix("/").Handler(spa)
-
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         ":80",
+		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(srv.ListenAndServeTLS("./monkeys-drip.com+3.pem", "./monkeys-drip.com+3-key.pem"))
 }

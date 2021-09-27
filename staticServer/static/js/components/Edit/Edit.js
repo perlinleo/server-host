@@ -209,6 +209,7 @@ export default class EditComponent {
             'description': desc,
             'tags': tags,
           }),
+          credentials: 'include',
         };
         fetch(`${localAddress}/api/v1/edit`, requestOptions)
             .then((response) =>
