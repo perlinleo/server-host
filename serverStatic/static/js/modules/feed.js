@@ -24,7 +24,8 @@ const swipeUser = (id) => {
     },
     body: JSON.stringify({
       'id': id,
-    })
+    }),
+    credentials: 'include',
   };
   
   fetch(`${serverAddress}/api/v1/nextswipeuser`, requestOptions)

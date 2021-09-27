@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 // const serverAddress = 'http://95.84.192.140'
-const serverAddress = 'http://127.0.0.1:8080'
+const serverAddress = 'https://127.0.0.1:8080'
 
 const user = {
   'id': 1,

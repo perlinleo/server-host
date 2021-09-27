@@ -28,19 +28,19 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
-func setupResponse(w *http.ResponseWriter, req *http.Request) {
-	(*w).Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
+func setupCORSResponse(w *http.ResponseWriter, r *http.Request) {
+	(*w).Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie, Access-Control-Allow-Credentials, Access-Control-Allow-Origin")
 }
 
+func (env *Env) corsHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+}
+
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
-	setupResponse(&w, r)
-	if (*r).Method == "OPTIONS" {
-		fmt.Println("CORS")
-		return
-	}
+	setupCORSResponse(&w, r)
 
 	var resp JSON
 	session, err := r.Cookie("sessionId")
@@ -67,10 +67,7 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
-	setupResponse(&w, r)
-	if (*r).Method == "OPTIONS" {
-		return
-	}
+	setupCORSResponse(&w, r)
 
 	var resp JSON
 
@@ -107,7 +104,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "sessionId",
 			Value:    md5CookieValue,
 			Expires:  expiration,
-			Secure:   false,
+			Secure:   true,
 			SameSite: http.SameSiteNoneMode,
 			HttpOnly: true,
 		}
@@ -129,6 +126,8 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
@@ -179,7 +178,8 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 		Name:     "sessionId",
 		Value:    md5CookieValue,
 		Expires:  expiration,
-		Secure:   false,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		HttpOnly: true,
 	}
 
@@ -198,6 +198,8 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	session, err := r.Cookie("sessionId")
 
 	if err == http.ErrNoCookie {
@@ -216,6 +218,8 @@ func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(&w, r)
+
 	var resp JSON
 
 	// get current user by cookie
@@ -267,40 +271,6 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	sendResp(resp, &w)
 }
-
-// type spaHandler struct {
-// 	staticPath string
-// 	indexPath  string
-// }
-
-// func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	// get the absolute path to prevent directory traversal
-// 	path, err := filepath.Abs(r.URL.Path)
-// 	if err != nil {
-// 		// if we failed to get the absolute path respond with a 400 bad request
-// 		// and stop
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	// prepend the path with the path to the static directory
-// 	path = filepath.Join(h.staticPath, path)
-
-// 	// check whether a file exists at the given path
-// 	_, err = os.Stat(path)
-// 	if os.IsNotExist(err) {
-// 		// file does not exist, serve index.html
-// 		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-// 		return
-// 	} else if err != nil {
-// 		// if we got an error (that wasn't that the file doesn't exist) stating the
-// 		// file, return a 500 internal server error and stop
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	// otherwise, use http.FileServer to serve the static dir
-// 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
-// }
 
 type Env struct {
 	db interface {
@@ -375,8 +345,9 @@ func main() {
 	// mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 	// mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
-	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET", "OPTIONS")
-	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST", "OPTIONS")
+	mux.PathPrefix("/api/v1/").HandlerFunc(env.corsHandler).Methods("OPTIONS")
+	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
+	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST", "OPTIONS")
 	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET", "OPTIONS")
 	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST", "OPTIONS")
@@ -385,8 +356,9 @@ func main() {
 	// mux.PathPrefix("/").Handler(spa)
 
 	// c := cors.New(cors.Options{
-	// 	AllowedOrigins:   []string{"*"},
+	// 	AllowedOrigins:   []string{"https://127.0.0.1:443"},
 	// 	AllowCredentials: true,
+	// 	AllowedHeaders:   []string{"Access-Control-Allow-Origin"},
 	// })
 	// handler := c.Handler(mux)
 
@@ -402,5 +374,5 @@ func main() {
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(srv.ListenAndServeTLS("./drip-ilyagu.com+4.pem", "./drip-ilyagu.com+4-key.pem"))
 }

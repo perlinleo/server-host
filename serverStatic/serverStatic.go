@@ -74,10 +74,10 @@ func main() {
 		Handler: mux,
 		// Handler: handler,
 		// Handler:      handlers.CORS(headersOk, originsOk, methodsOk)(mux),
-		Addr:         ":80",
+		Addr:         ":443",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(srv.ListenAndServeTLS("../drip-ilyagu.com+4.pem", "../drip-ilyagu.com+4-key.pem"))
 }
