@@ -21,13 +21,20 @@ type User struct {
 	Tags        []string `json:"tags"`
 }
 
+func hashPassword(password string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(password)))
+}
+
+func makeUser(id uint64, email, password string) User {
+	return User{ID: id, Email: email, Password: hashPassword(password)}
+}
+
 func (user User) isEmpty() bool {
 	return len(user.Email) == 0
 }
 
 func (user User) isCorrectPassword(password string) bool {
-	md5Password := fmt.Sprintf("%x", md5.Sum([]byte(password)))
-	return user.Password == md5Password
+	return user.Password == hashPassword(password)
 }
 
 type LoginUser struct {

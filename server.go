@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,7 @@ const (
 	StatusBadRequest          = 400
 	StatusNotFound            = 404
 	StatusInternalServerError = 500
+	StatusEmailAlreadyExists  = 1001
 )
 
 func sendResp(resp JSON, w *http.ResponseWriter) {
@@ -30,16 +32,33 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
+func createSessionCookie(user LoginUser) http.Cookie {
+	expiration := time.Now().Add(10 * time.Hour)
+
+	data := user.Password + time.Now().String()
+	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
+
+	cookie := http.Cookie{
+		Name:     "sessionId",
+		Value:    md5CookieValue,
+		Expires:  expiration,
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	return cookie
+}
+
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 	var resp JSON
 	session, err := r.Cookie("sessionId")
-	if err == http.ErrNoCookie {
+	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
 	}
 
-	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
+	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -70,7 +89,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identifiableUser, err := env.db.getUserModel(logUserData.Email)
+	identifiableUser, err := env.db.getUser(logUserData.Email)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -79,20 +98,8 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	status := StatusOK
 	if identifiableUser.isCorrectPassword(logUserData.Password) {
-		expiration := time.Now().Add(10 * time.Hour)
-
-		data := logUserData.Password + time.Now().String()
-		md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
-
-		cookie := http.Cookie{
-			Name:     "sessionId",
-			Value:    md5CookieValue,
-			Expires:  expiration,
-			Secure:   false,
-			HttpOnly: true,
-		}
-
-		err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+		cookie := createSessionCookie(logUserData)
+		err = env.sessionDB.newSessionCookie(cookie.Value, identifiableUser.ID)
 		if err != nil {
 			resp.Status = StatusInternalServerError
 			sendResp(resp, &w)
@@ -126,44 +133,22 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identifiableUser, err := env.db.getUserModel(logUserData.Email)
-	if err == nil {
-		resp.Status = StatusNotFound
+	identifiableUser, _ := env.db.getUser(logUserData.Email)
+	if !identifiableUser.isEmpty() {
+		resp.Status = StatusEmailAlreadyExists
 		sendResp(resp, &w)
 		return
 	}
 
-	status := StatusOK
-
-	newID := len(users) + 1
-	newEmail := logUserData.Email
-	newPassword := logUserData.Password
-
-	md5NewPassword := fmt.Sprintf("%x", md5.Sum([]byte(newPassword)))
-
-	newUser := User{
-		ID:       uint64(newID),
-		Email:    newEmail,
-		Password: md5NewPassword,
+	user, err := env.db.createUser(logUserData)
+	if err != nil {
+		resp.Status = StatusInternalServerError
+		sendResp(resp, &w)
+		return
 	}
 
-	users[uint64(newID)] = newUser
-
-	// куки
-	expiration := time.Now().Add(10 * time.Hour)
-
-	data := logUserData.Password + time.Now().String()
-	md5CookieValue := fmt.Sprintf("%x", md5.Sum([]byte(data)))
-
-	cookie := http.Cookie{
-		Name:     "sessionId",
-		Value:    md5CookieValue,
-		Expires:  expiration,
-		Secure:   false,
-		HttpOnly: true,
-	}
-
-	err = env.sessionDB.newSessionCookie(md5CookieValue, identifiableUser.ID)
+	cookie := createSessionCookie(logUserData)
+	err = env.sessionDB.newSessionCookie(cookie.Value, user.ID)
 	if err != nil {
 		resp.Status = StatusInternalServerError
 		sendResp(resp, &w)
@@ -171,16 +156,15 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &cookie)
-	// куки
 
-	resp.Status = status
+	resp.Status = StatusOK
 	sendResp(resp, &w)
 }
 
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("sessionId")
 
-	if err == http.ErrNoCookie {
+	if err != nil {
 		sendResp(JSON{Status: StatusNotFound}, &w)
 		return
 	}
@@ -205,7 +189,7 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 		sendResp(resp, &w)
 		return
 	}
-	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
+	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -284,17 +268,36 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type Env struct {
 	db interface {
-		getUserModel(string) (User, error)
-		addSwipedUsers(uint64, uint64) error
-		getNextUserForSwipe(uint64) (User, error)
+		getUser(email string) (User, error)
+		getUserByID(userID uint64) (User, error)
+		createUser(logUserData LoginUser) (User, error)
+		addSwipedUsers(currentUserId, swipedUserId uint64) error
+		getNextUserForSwipe(currentUserId uint64) (User, error)
 	}
 	sessionDB interface {
-		getUserByCookie(sessionCookie string) (User, error)
+		getUserIDByCookie(sessionCookie string) (uint64, error)
 		newSessionCookie(sessionCookie string, userId uint64) error
 		deleteSessionCookie(sessionCookie string) error
 	}
 }
 
+func (env Env) getUserByCookie(sessionCookie string) (User, error) {
+	userID, err := env.sessionDB.getUserIDByCookie(sessionCookie)
+	if err != nil {
+		return User{}, errors.New("error sessionDB: getUserIDByCookie")
+	}
+
+	user, err := env.db.getUserByID(userID)
+	if err != nil {
+		return User{}, errors.New("error db: getUserByID")
+	}
+
+	return user, nil
+}
+
+var (
+	db = NewMockDB()
+)
 func init() {
 	marvin := User{
 		ID:          1,
@@ -326,9 +329,9 @@ func init() {
 		ImgSrc:      "/img/Yachty-tout.jpg",
 		Tags:        []string{"haha", "hihi"},
 	}
-	users[1] = marvin
-	users[2] = marvin2
-	users[3] = marvin3
+	db.users[1] = marvin
+	db.users[2] = marvin2
+	db.users[3] = marvin3
 }
 
 func main() {
@@ -343,24 +346,25 @@ func main() {
 	*/
 
 	env := &Env{
-		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		db:        db, // NewMockDB()
+		sessionDB: NewSessionDB(),
 	}
 
-	mux := mux.NewRouter()
+	router := mux.NewRouter()
 
-	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
-	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
-	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
+	router.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
+	router.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	//router.HandleFunc("/api/v1/createprofile", env.loginHandler).Methods("POST")
+	router.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
+	router.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
+	router.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
 
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	mux.PathPrefix("/").Handler(spa)
+	router.PathPrefix("/").Handler(spa)
 
 	srv := &http.Server{
-		Handler:      mux,
-		Addr:         ":80",
+		Handler:      router,
+		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
