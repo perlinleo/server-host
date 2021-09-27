@@ -10,6 +10,8 @@ import SignupComponent from './components/Signup/Signup.js';
 
 import MenuComponent from './components/Tapbar/Tapbar.js';
 
+import EditComponent from './components/Edit/Edit.js';
+
 const root = document.getElementById('root');
 
 window.addEventListener('load', (e) => {
@@ -69,7 +71,7 @@ const configApp = {
   'profile-edit': {
     link: '/profile/edit',
     name: 'edit profile',
-    open: notDoneYet,
+    open: editPage,
   },
   'profile-logout': {
     link: '/',
@@ -78,6 +80,11 @@ const configApp = {
   }
 }
 
+
+function editPage() {
+  const edit = new EditComponent(root);
+  edit.render();
+}
 
 function feedExpandedPage() {
   const feedExpanded = new FeedExpandedComponent(root);
