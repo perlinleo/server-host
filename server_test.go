@@ -329,16 +329,6 @@ func TestNextUser(t *testing.T) {
 		},
 		TestCase{
 			testType: wrongCase,
-			BodyReq: bytes.NewReader([]byte(`{"id":2}`)),
-			CookieReq: http.Cookie{
-				Name:     "sessionId",
-				Value:    "123",
-			},
-			StatusCode: http.StatusOK,
-			BodyResp: `{"status":404,"body":null}`,
-		},
-		TestCase{
-			testType: wrongCase,
 			BodyReq: bytes.NewReader([]byte(`{"id":1}`)),
 			CookieReq: http.Cookie{
 				Name:     "sessionId",

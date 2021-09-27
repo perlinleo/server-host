@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 )
 
 type MockDB struct {
@@ -51,12 +52,14 @@ func (db *MockDB) createUser(logUserData LoginUser) (User, error) {
 
 func (db *MockDB) addSwipedUsers(currentUserId, swipedUserId uint64) error {
 	if len(db.users) == 0 {
+		fmt.Println("1_1")
 		return errors.New("users is empty map")
 	}
 
-	if currentUserId == swipedUserId {
-		return errors.New("wrong swipedUserId")
-	}
+	// if currentUserId == swipedUserId {
+	// 	fmt.Println("1_2")
+	// 	return errors.New("wrong swipedUserId")
+	// }
 
 	db.swipedUsers[currentUserId] = append(db.swipedUsers[currentUserId], swipedUserId)
 	return nil

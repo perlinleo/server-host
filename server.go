@@ -185,12 +185,14 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 	// get current user by cookie
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
+	
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
 	}
 	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
+		
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
@@ -228,7 +230,7 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp.Status = StatusOK
 	resp.Body = nextUser
-
+	
 	sendResp(resp, &w)
 }
 
@@ -364,7 +366,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         ":8080",
+		Addr:         ":80",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}

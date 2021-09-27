@@ -48,6 +48,7 @@ class Feed {
           status: response.status,
         })).then((res) => {
           if (res.data.status === 200) {
+            console.log(res.data.body)
             this.#addProfile(res.data.body);
 
             callback(res.data, res.status);
