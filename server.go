@@ -88,7 +88,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identifiableUser, err := env.db.getUserModel(logUserData.Email)
+	identifiableUser, err := env.db.getUser(logUserData.Email)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -132,14 +132,14 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identifiableUser, _ := env.db.getUserModel(logUserData.Email)
+	identifiableUser, _ := env.db.getUser(logUserData.Email)
 	if !identifiableUser.isEmpty() {
 		resp.Status = StatusEmailAlreadyExists
 		sendResp(resp, &w)
 		return
 	}
 
-	err = env.db.createUser(logUserData)
+	user, err := env.db.createUser(logUserData)
 	if err != nil {
 		resp.Status = StatusInternalServerError
 		sendResp(resp, &w)
@@ -147,7 +147,7 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie := createSessionCookie(logUserData)
-	err = env.sessionDB.newSessionCookie(cookie.Value, identifiableUser.ID)
+	err = env.sessionDB.newSessionCookie(cookie.Value, user.ID)
 	if err != nil {
 		resp.Status = StatusInternalServerError
 		sendResp(resp, &w)
@@ -267,8 +267,8 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type Env struct {
 	db interface {
-		getUserModel(string) (User, error)
-		createUser(logUserData LoginUser) error
+		getUser(string) (User, error)
+		createUser(logUserData LoginUser) (User, error)
 		addSwipedUsers(uint64, uint64) error
 		getNextUserForSwipe(uint64) (User, error)
 	}

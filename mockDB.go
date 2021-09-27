@@ -14,7 +14,7 @@ type MockDB struct {
 	//DB int
 }
 
-func (MockDB) getUserModel(email string) (User, error) {
+func (MockDB) getUser(email string) (User, error) {
 	if len(users) == 0 {
 		return User{}, errors.New("users is empty map")
 	}
@@ -34,12 +34,12 @@ func (MockDB) getUserModel(email string) (User, error) {
 	return currentUser, nil
 }
 
-func (MockDB) createUser(logUserData LoginUser) error {
+func (MockDB) createUser(logUserData LoginUser) (User, error) {
 	newID := uint64(len(users) + 1)
 
 	users[newID] = makeUser(newID, logUserData.Email, logUserData.Password)
 
-	return nil
+	return users[newID], nil
 }
 
 func (MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
@@ -54,7 +54,7 @@ func (MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
 }
 
 func (MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
-	if len(users) == 0 {
+	/*if len(users) == 0 {
 		return User{}, errors.New("users is empty map")
 	}
 	if len(swipedUsers) == 0 {
@@ -84,7 +84,8 @@ func (MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
 		}
 	}
 
-	return User{}, errors.New("haven't any other users for swipe")
+	return User{}, errors.New("haven't any other users for swipe")*/
+	return makeUser(9999, "testNextUserForSwipe@mail.ru", "123456qQ"), nil
 }
 
 func existsIn(value uint64, target []uint64) bool {
