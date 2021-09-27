@@ -7,12 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 )
 
 const (
@@ -31,18 +28,19 @@ func sendResp(resp JSON, w *http.ResponseWriter) {
 	(*w).Write(byteResp)
 }
 
-// func setupResponse(w *http.ResponseWriter, req *http.Request) {
-// 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-// 	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
-// 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-// 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Set-Cookie")
-// }
+func setupResponse(w *http.ResponseWriter, req *http.Request) {
+	(*w).Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
+	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie")
+}
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
-	// setupResponse(&w, r)
-	// if (*r).Method == "OPTIONS" {
-	// 	return
-	// }
+	setupResponse(&w, r)
+	if (*r).Method == "OPTIONS" {
+		fmt.Println("CORS")
+		return
+	}
 
 	var resp JSON
 	session, err := r.Cookie("sessionId")
@@ -69,10 +67,10 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
-	// setupResponse(&w, r)
-	// if (*r).Method == "OPTIONS" {
-	// 	return
-	// }
+	setupResponse(&w, r)
+	if (*r).Method == "OPTIONS" {
+		return
+	}
 
 	var resp JSON
 
@@ -109,8 +107,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 			Name:     "sessionId",
 			Value:    md5CookieValue,
 			Expires:  expiration,
-			SameSite: http.SameSiteNoneMode,
-			Secure:   true,
+			Secure:   false,
 			HttpOnly: true,
 		}
 
@@ -270,39 +267,39 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 	sendResp(resp, &w)
 }
 
-type spaHandler struct {
-	staticPath string
-	indexPath  string
-}
+// type spaHandler struct {
+// 	staticPath string
+// 	indexPath  string
+// }
 
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// get the absolute path to prevent directory traversal
-	path, err := filepath.Abs(r.URL.Path)
-	if err != nil {
-		// if we failed to get the absolute path respond with a 400 bad request
-		// and stop
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// 	// get the absolute path to prevent directory traversal
+// 	path, err := filepath.Abs(r.URL.Path)
+// 	if err != nil {
+// 		// if we failed to get the absolute path respond with a 400 bad request
+// 		// and stop
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	// prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
+// 	// prepend the path with the path to the static directory
+// 	path = filepath.Join(h.staticPath, path)
 
-	// check whether a file exists at the given path
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		// file does not exist, serve index.html
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-		return
-	} else if err != nil {
-		// if we got an error (that wasn't that the file doesn't exist) stating the
-		// file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// otherwise, use http.FileServer to serve the static dir
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
-}
+// 	// check whether a file exists at the given path
+// 	_, err = os.Stat(path)
+// 	if os.IsNotExist(err) {
+// 		// file does not exist, serve index.html
+// 		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
+// 		return
+// 	} else if err != nil {
+// 		// if we got an error (that wasn't that the file doesn't exist) stating the
+// 		// file, return a 500 internal server error and stop
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	// otherwise, use http.FileServer to serve the static dir
+// 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+// }
 
 type Env struct {
 	db interface {
@@ -371,22 +368,34 @@ func main() {
 
 	mux := mux.NewRouter()
 
-	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
-	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
-	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
-	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
+	// mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
+	// mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
+	// mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
+	// mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
+	// mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
+
+	mux.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET", "OPTIONS")
+	mux.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST", "OPTIONS")
+	mux.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST", "OPTIONS")
+	mux.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET", "OPTIONS")
+	mux.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST", "OPTIONS")
 
 	// spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	// mux.PathPrefix("/").Handler(spa)
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://127.0.0.1"},
-		AllowCredentials: true,
-	})
-	handler := c.Handler(mux)
+	// c := cors.New(cors.Options{
+	// 	AllowedOrigins:   []string{"*"},
+	// 	AllowCredentials: true,
+	// })
+	// handler := c.Handler(mux)
+
+	// headersOk := handlers.AllowedHeaders([]string{"Accept", "Accept-Language", "Content-Type", "Content-Language", "Origin", "X-Requested-With", "Authorization"})
+	// originsOk := handlers.AllowedOrigins([]string{"*"})
+	// methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	srv := &http.Server{
-		Handler:      handler,
+		Handler: mux,
+		// Handler: handler,
+		// Handler:      handlers.CORS(originsOk, headersOk, methodsOk)(mux),
 		Addr:         ":8080",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,

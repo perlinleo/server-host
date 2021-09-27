@@ -3,10 +3,11 @@ const loginWithCookie = () => {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      // 'Access-Control-Allow-Origin': '*',
-      // 'Allow-Credentials': 'true'
+      // 'Access-Control-Allow-Origin': 'http://127.0.0.1:8080',
+      // 'Allow-Origin':'*',
+      'Allow-Credentials': 'true',
     },
-    // credential: 'include',
+    credential: 'include',
     // mode: 'no-cors',
   };
   
@@ -36,11 +37,16 @@ const loginWithCookie = () => {
 function loginWithCredentials(email, password){
     const requestOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Allow-Credentials': 'true',
+        },
         body: JSON.stringify({
           'email': email,
           'password': password,
-        })
+        }),
+        credential: 'include',
+        // mode: 'no-cors',
       };
       fetch(`${serverAddress}/api/v1/login`, requestOptions)
         .then(response =>

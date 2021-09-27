@@ -14,7 +14,19 @@ type spaHandler struct {
 	indexPath  string
 }
 
+// func setupResponse(w *http.ResponseWriter, req *http.Request) {
+// 	(*w).Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:8080")
+// 	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
+// 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+// 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Set-Cookie")
+// }
+
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// setupResponse(&w, r)
+	// if (*r).Method == "OPTIONS" {
+	// 	return
+	// }
+
 	// get the absolute path to prevent directory traversal
 	path, err := filepath.Abs(r.URL.Path)
 	if err != nil {
@@ -50,11 +62,18 @@ func main() {
 	mux.PathPrefix("/").Handler(spa)
 
 	// c := cors.New(cors.Options{
+	// 	AllowedOrigins:   []string{"http://127.0.0.1:8080"},
 	// 	AllowCredentials: true,
 	// })
 	// handler := c.Handler(mux)
+
+	// headersOk := handlers.AllowedHeaders([]string{"Accept", "Accept-Language", "Content-Type", "Content-Language", "Origin", "X-Requested-With", "Authorization"})
+	// originsOk := handlers.AllowedOrigins([]string{"*"})
+	// methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 	srv := &http.Server{
-		Handler:      mux,
+		Handler: mux,
+		// Handler: handler,
+		// Handler:      handlers.CORS(headersOk, originsOk, methodsOk)(mux),
 		Addr:         ":80",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
