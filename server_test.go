@@ -13,9 +13,9 @@ import (
 func TestCurrentUser(t *testing.T) {
 	//t.Parallel() TODO Tests Parallel
 
-	h := Env{
-		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+	env := &Env{
+		db:        &MockDB{},
+		sessionDB: &MockSessionDB{},
 	}
 
 	var body io.Reader
@@ -35,7 +35,7 @@ func TestCurrentUser(t *testing.T) {
 	r.AddCookie(&c)
 	w := httptest.NewRecorder()
 
-	h.currentUser(w, r)
+	env.currentUser(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("status is not ok")
@@ -51,7 +51,7 @@ func TestLogin(t *testing.T) {
 
 	h := Env{
 		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		sessionDB: MockDB{},
 	}
 
 	body := bytes.NewReader([]byte(`{"email":"testLogin1@mail.ru","password":"123456qQ"}`))
@@ -85,7 +85,7 @@ func TestSignup(t *testing.T) {
 
 	h := Env{
 		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		sessionDB: MockDB{},
 	}
 
 	body := bytes.NewReader([]byte(`{"email":"testSignup1@mail.ru","password":"123456qQ"}`))
@@ -127,7 +127,7 @@ func TestLogout(t *testing.T) {
 
 	h := Env{
 		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		sessionDB: MockDB{},
 	}
 
 	var body io.Reader
@@ -160,7 +160,7 @@ func TestNextUser(t *testing.T) {
 
 	h := Env{
 		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		sessionDB: MockDB{},
 	}
 
 	body := bytes.NewReader([]byte(`{"id":1234}`))

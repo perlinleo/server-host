@@ -4,24 +4,23 @@ import (
 	"errors"
 )
 
-var (
-	users       = make(map[uint64]User)
-	cookies     = make(map[string]uint64)
-	swipedUsers = make(map[uint64][]uint64)
-)
-
 type MockDB struct {
-	//DB int
+	users       map[uint64]User
+	swipedUsers map[uint64][]uint64
 }
 
-func (MockDB) getUser(email string) (User, error) {
-	if len(users) == 0 {
+func NewMockDB() *MockDB {
+	return &MockDB{make(map[uint64]User), make(map[uint64][]uint64)}
+}
+
+func (db MockDB) getUser(email string) (User, error) {
+	if len(db.users) == 0 {
 		return User{}, errors.New("users is empty map")
 	}
 
 	currentUser := User{}
 	okUser := false
-	for _, value := range users {
+	for _, value := range db.users {
 		if value.Email == email {
 			currentUser = value
 			okUser = true
@@ -34,31 +33,39 @@ func (MockDB) getUser(email string) (User, error) {
 	return currentUser, nil
 }
 
-func (MockDB) createUser(logUserData LoginUser) (User, error) {
-	newID := uint64(len(users) + 1)
+func (db MockDB) getUserByID(userID uint64) (User, error) {
+	if user, ok := db.users[userID]; ok {
+		return user, nil
+	}
 
-	users[newID] = makeUser(newID, logUserData.Email, logUserData.Password)
-
-	return users[newID], nil
+	return User{}, errors.New("")
 }
 
-func (MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
-	if len(users) == 0 {
+func (db *MockDB) createUser(logUserData LoginUser) (User, error) {
+	newID := uint64(len(db.users) + 1)
+
+	db.users[newID] = makeUser(newID, logUserData.Email, logUserData.Password)
+
+	return db.users[newID], nil
+}
+
+func (db *MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
+	if len(db.users) == 0 {
 		return errors.New("users is empty map")
 	}
 
 	if currentUserId != swipedUserId {
-		swipedUsers[currentUserId] = append(swipedUsers[currentUserId], swipedUserId)
+		db.swipedUsers[currentUserId] = append(db.swipedUsers[currentUserId], swipedUserId)
 	}
 	return nil
 }
 
-func (MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
-	/*if len(users) == 0 {
+func (db MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
+	if len(db.users) == 0 {
 		return User{}, errors.New("users is empty map")
 	}
-	if len(swipedUsers) == 0 {
-		for key, value := range users {
+	if len(db.swipedUsers) == 0 {
+		for key, value := range db.users {
 			if key != currentUserId {
 				return value, nil
 			}
@@ -68,14 +75,14 @@ func (MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
 
 	// find all users swiped by the current user
 	var allSwipedUsersForCurrentUser []uint64
-	for key, value := range swipedUsers {
+	for key, value := range db.swipedUsers {
 		if key == currentUserId {
 			allSwipedUsersForCurrentUser = value
 		}
 	}
 
 	// find a user who has not yet been swiped by the current user
-	for key, value := range users {
+	for key, value := range db.users {
 		if key == currentUserId {
 			continue
 		}
@@ -84,8 +91,7 @@ func (MockDB) getNextUserForSwipe(currentUserId uint64) (User, error) {
 		}
 	}
 
-	return User{}, errors.New("haven't any other users for swipe")*/
-	return makeUser(9999, "testNextUserForSwipe@mail.ru", "123456qQ"), nil
+	return User{}, errors.New("haven't any other users for swipe")
 }
 
 func existsIn(value uint64, target []uint64) bool {
@@ -100,32 +106,32 @@ func existsIn(value uint64, target []uint64) bool {
 }
 
 type MockSessionDB struct {
+	cookies     map[string]uint64
 }
 
-func (MockSessionDB) getUserByCookie(sessionCookie string) (User, error) {
-	if len(cookies) == 0 {
-		return User{}, errors.New("cookies is empty map")
+func NewSessionDB() *MockSessionDB {
+	return &MockSessionDB{make(map[string]uint64)}
+}
+
+func (db MockSessionDB) getUserIDByCookie(sessionCookie string) (userID uint64, err error) {
+	if len(db.cookies) == 0 {
+		return userID, errors.New("cookies is empty map")
 	}
 
-	currentUserId, okCookie := cookies[sessionCookie]
+	userID, okCookie := db.cookies[sessionCookie]
 	if !okCookie {
-		return User{}, errors.New("cookie not found")
+		return userID, errors.New("cookie not found")
 	}
 
-	currentUser, okUser := users[currentUserId]
-	if !okUser {
-		return User{}, errors.New("user not found")
-	}
-
-	return currentUser, nil
+	return userID, nil
 }
 
-func (MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) error {
-	cookies[sessionCookie] = userId
+func (db *MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) error {
+	db.cookies[sessionCookie] = userId
 	return nil
 }
 
-func (MockSessionDB) deleteSessionCookie(sessionCookie string) error {
-	delete(cookies, sessionCookie)
+func (db *MockSessionDB) deleteSessionCookie(sessionCookie string) error {
+	delete(db.cookies, sessionCookie)
 	return nil
 }

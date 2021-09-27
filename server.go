@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -57,7 +58,7 @@ func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
+	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -188,7 +189,7 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 		sendResp(resp, &w)
 		return
 	}
-	currentUser, err := env.sessionDB.getUserByCookie(session.Value)
+	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
@@ -267,18 +268,36 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type Env struct {
 	db interface {
-		getUser(string) (User, error)
+		getUser(email string) (User, error)
+		getUserByID(userID uint64) (User, error)
 		createUser(logUserData LoginUser) (User, error)
-		addSwipedUsers(uint64, uint64) error
-		getNextUserForSwipe(uint64) (User, error)
+		addSwipedUsers(currentUserId uint64, swipedUserId uint64) error
+		getNextUserForSwipe(currentUserId uint64) (User, error)
 	}
 	sessionDB interface {
-		getUserByCookie(sessionCookie string) (User, error)
+		getUserIDByCookie(sessionCookie string) (uint64, error)
 		newSessionCookie(sessionCookie string, userId uint64) error
 		deleteSessionCookie(sessionCookie string) error
 	}
 }
 
+func (env Env) getUserByCookie(sessionCookie string) (User, error) {
+	userID, err := env.sessionDB.getUserIDByCookie(sessionCookie)
+	if err != nil {
+		return User{}, errors.New("error sessionDB: getUserIDByCookie")
+	}
+
+	user, err := env.db.getUserByID(userID)
+	if err != nil {
+		return User{}, errors.New("error db: getUserByID")
+	}
+
+	return user, nil
+}
+
+var (
+	db = NewMockDB()
+)
 func init() {
 	marvin := User{
 		ID:          1,
@@ -310,9 +329,9 @@ func init() {
 		ImgSrc:      "/img/Yachty-tout.jpg",
 		Tags:        []string{"haha", "hihi"},
 	}
-	users[1] = marvin
-	users[2] = marvin2
-	users[3] = marvin3
+	db.users[1] = marvin
+	db.users[2] = marvin2
+	db.users[3] = marvin3
 }
 
 func main() {
@@ -327,8 +346,8 @@ func main() {
 	*/
 
 	env := &Env{
-		db:        MockDB{},
-		sessionDB: MockSessionDB{},
+		db:        db, // NewMockDB()
+		sessionDB: NewSessionDB(),
 	}
 
 	router := mux.NewRouter()
