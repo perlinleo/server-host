@@ -55,9 +55,14 @@ class Feed {
           data: data,
           status: response.status
         })).then(res => {
-          this.#addProfile(res.data.body)
-          console.log(this.#feedData);
-          callback(res.data, res.status)
+          if (res.data.status === 200) {
+            this.#addProfile(res.data.body)
+          
+            callback(res.data, res.status)
+          } else if (res.data.status === 404) {
+            alert("end of profiles");
+          }
+            
 
 
           //cringe
