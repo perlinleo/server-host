@@ -3,59 +3,58 @@ export default class MenuComponent {
     #activeItem
 
     constructor(parent) {
-        this.#parent = parent;
+      this.#parent = parent;
     }
 
     set activeItem(data) {
-        this.#activeItem = data;
+      this.#activeItem = data;
     }
 
     #renderDOM() {
-        const menu = createElementWithClass('div', 'tapbar-container');
-        if (this.#activeItem === 'feed') {
+      const menu = createElementWithClass('div', 'tapbar-container');
+      if (this.#activeItem === 'feed') {
         menu.appendChild(createActionElement('icons/tapbar_feed_white_selected.svg', 'menu-feed'));
-        } else {
+      } else {
         menu.appendChild(createActionElement('icons/tapbar_feed_white_deselected.svg', 'menu-feed'));
-        }
-        if (this.#activeItem === 'likes') {
+      }
+      if (this.#activeItem === 'likes') {
         menu.appendChild(createActionElement('icons/tapbar_likes_white_selected.svg', 'menu-likes'));
-        } else {
+      } else {
         menu.appendChild(createActionElement('icons/tapbar_likes_white_deselected.svg', 'menu-likes'));
-        }
-        if (this.#activeItem === 'chat') {
+      }
+      if (this.#activeItem === 'chat') {
         menu.appendChild(createActionElement('icons/tapbar_chat_white_selected.svg', 'menu-chat'));
-        } else {
+      } else {
         menu.appendChild(createActionElement('icons/tapbar_chat_white_deselected.svg', 'menu-chat'));
-        }
-        if (this.#activeItem === 'profile') {
+      }
+      if (this.#activeItem === 'profile') {
         menu.appendChild(createActionElement('icons/tapbar_user_white_selected.svg', 'menu-profile'));
-        } else {
+      } else {
         menu.appendChild(createActionElement('icons/tapbar_user_white_deselected.svg', 'menu-profile'));
-        }
-  
-        root.appendChild(menu);
-        function createActionElement(icon, action) {
-            const actionElement = document.createElement('button');
-            actionElement.className = 'menu-icon';
-            const Icon = document.createElement('img');
-            Icon.src = icon;
-            Icon.width = 40;
-            Icon.height = 40;
-            Icon.classList.add(action);
-        
-            actionElement.appendChild(Icon);
-        
-            return actionElement;
-        }
-            function createElementWithClass(tag, className) {
-            const element = document.createElement(tag);
-            element.className = className;
-            return element;
-        }
-    }  
+      }
 
-    render() {
-        this.#renderDOM();
+      root.appendChild(menu);
+      function createActionElement(icon, action) {
+        const actionElement = document.createElement('button');
+        actionElement.className = 'menu-icon';
+        const Icon = document.createElement('img');
+        Icon.src = icon;
+        Icon.width = 40;
+        Icon.height = 40;
+        Icon.classList.add(action);
+
+        actionElement.appendChild(Icon);
+
+        return actionElement;
+      }
+      function createElementWithClass(tag, className) {
+        const element = document.createElement(tag);
+        element.className = className;
+        return element;
+      }
     }
 
+    render() {
+      this.#renderDOM();
+    }
 }
