@@ -271,7 +271,7 @@ type Env struct {
 		getUser(email string) (User, error)
 		getUserByID(userID uint64) (User, error)
 		createUser(logUserData LoginUser) (User, error)
-		addSwipedUsers(currentUserId uint64, swipedUserId uint64) error
+		addSwipedUsers(currentUserId, swipedUserId uint64) error
 		getNextUserForSwipe(currentUserId uint64) (User, error)
 	}
 	sessionDB interface {

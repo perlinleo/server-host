@@ -49,7 +49,7 @@ func (db *MockDB) createUser(logUserData LoginUser) (User, error) {
 	return db.users[newID], nil
 }
 
-func (db *MockDB) addSwipedUsers(currentUserId uint64, swipedUserId uint64) error {
+func (db *MockDB) addSwipedUsers(currentUserId, swipedUserId uint64) error {
 	if len(db.users) == 0 {
 		return errors.New("users is empty map")
 	}
@@ -105,6 +105,21 @@ func existsIn(value uint64, target []uint64) bool {
 	return exists
 }
 
+func (db MockDB) isSwiped(userID, swipedUserID uint64) bool {
+	swipedUsers, ok := db.swipedUsers[userID]
+	if !ok {
+		return false
+	}
+
+	for _, currentUserID := range swipedUsers {
+		if currentUserID == swipedUserID {
+			return true
+		}
+	}
+
+	return false
+}
+
 type MockSessionDB struct {
 	cookies     map[string]uint64
 }
@@ -134,4 +149,14 @@ func (db *MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) e
 func (db *MockSessionDB) deleteSessionCookie(sessionCookie string) error {
 	delete(db.cookies, sessionCookie)
 	return nil
+}
+
+func (db MockSessionDB) isSessionByUserID(userID uint64) bool {
+	for _, currentUserID := range db.cookies {
+		if currentUserID == userID {
+			return true
+		}
+	}
+
+	return false
 }

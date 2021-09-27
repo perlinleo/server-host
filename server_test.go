@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,18 +13,21 @@ import (
 )
 
 func TestCurrentUser(t *testing.T) {
-	//t.Parallel() TODO Tests Parallel
+	t.Parallel()
+
+	testDB := NewMockDB()
+	testSessionDB := NewSessionDB()
 
 	env := &Env{
-		db:        &MockDB{},
-		sessionDB: &MockSessionDB{},
+		db:        testDB,
+		sessionDB: testSessionDB,
 	}
 
-	var body io.Reader
+	id := uint64(len(testDB.users) + 1)
+	testDB.users[id] = makeUser(id, "testCurrentUser1@mail.ru", "123456qQ")
+	testSessionDB.cookies["123"] = id
 
-	id := uint64(len(users) + 1)
-	users[id] = makeUser(id, "testCurrentUser1@mail.ru", "123456qQ")
-	cookies["123"] = id
+	var body io.Reader
 
 	idStr := strconv.FormatUint(id, 10)
 	expected := `{"status":200,"body":{"id":`+ idStr +`,"name":"","email":"testCurrentUser1@mail.ru","age":0,"description":"","imgSrc":"","tags":null}}`
@@ -47,94 +52,88 @@ func TestCurrentUser(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
-	h := Env{
-		db:        MockDB{},
-		sessionDB: MockDB{},
+	testDB := NewMockDB()
+	testSessionDB := NewSessionDB()
+
+	env := &Env{
+		db:        testDB,
+		sessionDB: testSessionDB,
 	}
 
 	body := bytes.NewReader([]byte(`{"email":"testLogin1@mail.ru","password":"123456qQ"}`))
 
-	id := uint64(123123)
-	users[id] = makeUser(id, "testLogin1@mail.ru", "123456qQ")
+	id := uint64(len(testDB.users) + 1)
+	testDB.users[id] = makeUser(id, "testLogin1@mail.ru", "123456qQ")
 
 	r := httptest.NewRequest("POST", "/api/v1/login/", body)
 	w := httptest.NewRecorder()
 
-	h.loginHandler(w, r)
+	env.loginHandler(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("status is not ok")
 	}
 
-	cookie := false
-	for _, userID := range cookies {
-		if userID == id {
-			cookie = true
-			break
-		}
-	}
-	if !cookie {
+	if !testSessionDB.isSessionByUserID(id) {
 		t.Error("session was not created")
 	}
 }
 
 func TestSignup(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
-	h := Env{
-		db:        MockDB{},
-		sessionDB: MockDB{},
+	testDB := NewMockDB()
+	testSessionDB := NewSessionDB()
+
+	env := &Env{
+		db:        testDB,
+		sessionDB: testSessionDB,
 	}
 
-	body := bytes.NewReader([]byte(`{"email":"testSignup1@mail.ru","password":"123456qQ"}`))
+	email := "testSignup1@mail.ru"
+	password := "123456qQ"
+	body := bytes.NewReader([]byte(`{"email":"` + email + `","password":"` + password + `"}`))
 
-	expectedUsers := make(map[uint64]User)
-	for k, v := range users {
-		expectedUsers[k] = v
-	}
-	id := uint64(len(expectedUsers) + 1)
-	expectedUsers[id] = makeUser(id, "testSignup1@mail.ru", "123456qQ")
+	expectedID := uint64(1)
+	expectedUsers := makeUser(expectedID, email, password)
 
 	r := httptest.NewRequest("POST", "/api/v1/signup/", body)
 	w := httptest.NewRecorder()
 
-	h.signupHandler(w, r)
+	env.signupHandler(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("status is not ok")
 	}
 
-	if !reflect.DeepEqual(users, expectedUsers) {
+	newUser, _ := testDB.getUser(email)
+	if !reflect.DeepEqual(newUser, expectedUsers) {
 		t.Error("user was not created")
 	}
 
-	cookie := false
-	for _, userID := range cookies {
-		if userID == id {
-			cookie = true
-			break
-		}
-	}
-	if !cookie {
+	if !testSessionDB.isSessionByUserID(expectedID) {
 		t.Error("session was not created")
 	}
 }
 
 func TestLogout(t *testing.T) {
-	//t.Parallel() TODO Tests Parallel
+	t.Parallel()
 
-	h := Env{
-		db:        MockDB{},
-		sessionDB: MockDB{},
+	testDB := NewMockDB()
+	testSessionDB := NewSessionDB()
+
+	env := &Env{
+		db:        testDB,
+		sessionDB: testSessionDB,
 	}
 
 	var body io.Reader
 
-	id := uint64(len(users) + 1)
-	users[id] = makeUser(id, "testLogout1@mail.ru", "123456qQ")
-	cookies["123"] = id
+	id := uint64(len(testDB.users) + 1)
+	testDB.users[id] = makeUser(id, "testLogout1@mail.ru", "123456qQ")
+	testSessionDB.cookies["123"] = id
 
 	r := httptest.NewRequest("GET", "/api/v1/logout", body)
 	c := http.Cookie{
@@ -144,32 +143,48 @@ func TestLogout(t *testing.T) {
 	r.AddCookie(&c)
 	w := httptest.NewRecorder()
 
-	h.logoutHandler(w, r)
+	env.logoutHandler(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("status is not ok")
 	}
 
-	if _, ok := cookies["123"]; ok {
+	if _, ok := testSessionDB.cookies["123"]; ok {
 		t.Error("user session not ended")
 	}
 }
 
 func TestNextUser(t *testing.T) {
-	//t.Parallel() TODO Tests Parallel
+	t.Parallel()
 
-	h := Env{
-		db:        MockDB{},
-		sessionDB: MockDB{},
+	testDB := NewMockDB()
+	testSessionDB := NewSessionDB()
+
+	env := &Env{
+		db:        testDB,
+		sessionDB: testSessionDB,
 	}
 
-	body := bytes.NewReader([]byte(`{"id":1234}`))
+	swipedUserID := uint64(1234)
+	swipedUserIDStr := strconv.FormatUint(swipedUserID, 10)
+	body := bytes.NewReader([]byte(`{"id":` + swipedUserIDStr + `}`))
 
-	id := uint64(len(users) + 1)
-	users[id] = makeUser(id, "testNextUser1@mail.ru", "123456qQ")
-	cookies["123"] = id
+	currenUser, _ := testDB.createUser(LoginUser{
+		Email: "testCurrUser1@mail.ru",
+		Password: "123456qQ\"",
+	})
+	testSessionDB.cookies["123"] = currenUser.ID
 
-	expected := `{"status":200,"body":{"id":9999,"name":"","email":"testNextUserForSwipe@mail.ru","age":0,"description":"","imgSrc":"","tags":null}}`
+	nextUser, _ := testDB.createUser(LoginUser{
+		Email: "testNextUser1@mail.ru",
+		Password: "123456qQ\"",
+	})
+
+	q := JSON{
+		Status: StatusOK,
+		Body: nextUser,
+	}
+	expected, _ := json.Marshal(q)
 
 	r := httptest.NewRequest("POST", "/api/v1/nextswipeuser", body)
 	c := http.Cookie{
@@ -179,17 +194,21 @@ func TestNextUser(t *testing.T) {
 	r.AddCookie(&c)
 	w := httptest.NewRecorder()
 
-	h.nextUserHandler(w, r)
+	env.nextUserHandler(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("status is not ok")
 	}
 
-	if _, ok := swipedUsers[id]; !ok {
+	if !testDB.isSwiped(currenUser.ID, swipedUserID) {
 		t.Error("swipe not saved")
+		fmt.Println(testDB.swipedUsers)
+		fmt.Println(currenUser)
+		fmt.Println(nextUser)
 	}
 
-	if w.Body.String() != expected {
+	if !reflect.DeepEqual(w.Body.Bytes(), expected) {
 		t.Error("invalid data nextSwipe")
+		fmt.Println(w.Body.String())
 	}
 }
