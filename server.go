@@ -164,7 +164,7 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("sessionId")
 
-	if err == http.ErrNoCookie {
+	if err != nil {
 		sendResp(JSON{Status: StatusNotFound}, &w)
 		return
 	}

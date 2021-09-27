@@ -54,9 +54,11 @@ func (db *MockDB) addSwipedUsers(currentUserId, swipedUserId uint64) error {
 		return errors.New("users is empty map")
 	}
 
-	if currentUserId != swipedUserId {
-		db.swipedUsers[currentUserId] = append(db.swipedUsers[currentUserId], swipedUserId)
+	if currentUserId == swipedUserId {
+		return errors.New("wrong swipedUserId")
 	}
+
+	db.swipedUsers[currentUserId] = append(db.swipedUsers[currentUserId], swipedUserId)
 	return nil
 }
 
@@ -147,6 +149,10 @@ func (db *MockSessionDB) newSessionCookie(sessionCookie string, userId uint64) e
 }
 
 func (db *MockSessionDB) deleteSessionCookie(sessionCookie string) error {
+	if _, ok := db.cookies[sessionCookie]; !ok {
+		return errors.New("cookie not found")
+	}
+
 	delete(db.cookies, sessionCookie)
 	return nil
 }
