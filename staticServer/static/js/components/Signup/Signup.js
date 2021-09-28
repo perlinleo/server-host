@@ -63,7 +63,7 @@ export default class SignupComponent {
         }
       });
 
-      const repeatPasswordInput = createInput('password', 'Пароль', 'password');
+      const repeatPasswordInput = createInput('password', 'Повторите пароль', 'password');
       repeatPasswordInput.className = 'form-field-valid';
       repeatPasswordInput.addEventListener('input', () => {
         const test = passwordInput.value === repeatPasswordInput.value;
@@ -83,12 +83,12 @@ export default class SignupComponent {
       const buttonText = document.createElement('span');
       buttonText.textContent = 'Зарегистрироваться';
       buttonText.classList.add('signup-button-text');
-      const buttonIcon = document.createElement('img');
-      buttonIcon.src = './svg/next.svg';
-      buttonIcon.classList.add('svg-next');
+      // const buttonIcon = document.createElement('img');
+      // buttonIcon.src = './svg/next.svg';
+      // buttonIcon.classList.add('svg-next');
 
       buttonFilling.appendChild(buttonText);
-      buttonFilling.appendChild(buttonIcon);
+      // buttonFilling.appendChild(buttonIcon);
 
       submitButton.appendChild(buttonFilling);
 
@@ -130,10 +130,23 @@ export default class SignupComponent {
 
       formContainer.appendChild(form);
 
-      const regLink = document.createElement('a');
-      regLink.href = '/createProfile';
-      regLink.textContent = 'Зарегестрироваться';
-      regLink.dataset.section = 'createProfile';
+      // button back
+      const buttonBack = document.createElement('a');
+      buttonBack.classList.add('back-link');
+      buttonBack.href = '/login';
+      buttonBack.dataset.section = 'login';
+      const backSVG = document.createElement('img');
+      backSVG.classList.add('back-svg');
+      backSVG.src = './svg/back.svg';
+      const textBack = document.createElement('span');
+      textBack.classList.add('back-text');
+      textBack.textContent = 'вернуться назад';
+      const buttonBackFeeling = createCenterContainer();
+      buttonBackFeeling.appendChild(backSVG);
+      buttonBackFeeling.appendChild(textBack);
+      const buttonBackContainer = createCenterContainer();
+      buttonBack.appendChild(buttonBackFeeling);
+      buttonBackContainer.appendChild(buttonBack);
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -192,6 +205,7 @@ export default class SignupComponent {
       });
 
       root.appendChild(formContainer);
+      root.appendChild(buttonBackContainer)
     }
 
     render() {

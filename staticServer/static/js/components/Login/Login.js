@@ -93,8 +93,8 @@ export default class LoginComponent {
       buttonText.textContent = 'Войти';
       buttonText.classList.add('login-button-text');
       const buttonIcon = document.createElement('img');
-      buttonIcon.src = './svg/next.svg';
-      buttonIcon.classList.add('svg-next');
+      // buttonIcon.src = './svg/next.svg';
+      // buttonIcon.classList.add('svg-next');
 
       buttonFilling.appendChild(buttonText);
       buttonFilling.appendChild(buttonIcon);
@@ -124,11 +124,11 @@ export default class LoginComponent {
       passwordFieldWithIcon.appendChild(passwordInput);
       passwordFieldWithIcon.appendChild(passwordIcon);
 
-      logoBg.appendChild(errorField);
       logoBg.appendChild(emailFieldWithIcon);
       logoBg.appendChild(passwordFieldWithIcon);
 
       form.appendChild(logoBg);
+      form.appendChild(errorField);
       form.appendChild(submitButton);
 
       formContainer.appendChild(form);
@@ -137,7 +137,7 @@ export default class LoginComponent {
       const regLink = document.createElement('a');
       regLink.classList.add('reg-link');
       regLink.href = '/signup';
-      regLink.textContent = 'Зарегестрироваться';
+      regLink.textContent = 'Зарегистрироваться';
       regLink.dataset.section = 'signup';
       regLinkContainer.appendChild(regLink);
 

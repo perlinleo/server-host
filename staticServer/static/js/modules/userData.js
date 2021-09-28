@@ -77,7 +77,7 @@ loginWithCredentials(email, password, callback=noop) {
           if (res.status === 200 && res.data.status === 200) {
             this.loginWithCookie(callback);
           } else if (res.data.status === 404) {
-
+              
             // loginPageError("User not found")
           }
         })).catch((error) => console.log(error));

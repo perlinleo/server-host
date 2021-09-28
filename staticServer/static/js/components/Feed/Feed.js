@@ -50,9 +50,14 @@ export default class FeedComponent {
 
      if (!currentobj) {
        root.innerHTML='';
-       const outOfCards = this.#createElementWithClass('div', 'out-of-cards');
-       outOfCards.innerText = 'Карточки кончились';
-       root.appendChild(outOfCards);
+       const outOfCardsContainer = this.#createElementWithClass('div', 'center-container');
+       const outOfCardsSVG = this.#createElementWithClass('img', 'out-of-cards-svg');
+       outOfCardsSVG.src = './svg/heart.svg';
+       const outOfCards = this.#createElementWithClass('span', 'out-of-cards');
+       outOfCards.innerText = 'возвращайся позже';
+       outOfCardsContainer.appendChild(outOfCardsSVG);
+       outOfCardsContainer.appendChild(outOfCards);
+       root.appendChild(outOfCardsContainer);
 
        return;
      }
