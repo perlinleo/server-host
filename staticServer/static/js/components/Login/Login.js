@@ -52,8 +52,6 @@ export default class LoginComponent {
 
       const form = document.createElement('form');
       form.classList.add('login-form');
-      const errorField = this.#createElementWithClass('div', 'login-error');
-      errorField.innerHTML = 'error placeholder';
       const emailInput = this.#createInput('email', 'Почта', 'email');
       emailInput.className = 'form-field-valid';
       emailInput.addEventListener('input', () => {
@@ -118,6 +116,10 @@ export default class LoginComponent {
 
       const formContainer = this.#createCenterContainer();
 
+      const errorEmail = this.#createElementWithClass('div', 'login-error');
+      errorEmail.innerHTML = 'Введите пароль в формате example@drip.com';
+      const errorPassword = this.#createElementWithClass('div', 'login-error');
+      errorPassword.innerHTML = 'Пароль должен состоять из больших, маленьких латинских символов, цифр и спец символа';
 
       emailFieldWithIcon.appendChild(emailInput);
       emailFieldWithIcon.appendChild(emailIcon);
@@ -125,7 +127,12 @@ export default class LoginComponent {
       passwordFieldWithIcon.appendChild(passwordIcon);
 
       logoBg.appendChild(emailFieldWithIcon);
+      logoBg.appendChild(errorEmail);
       logoBg.appendChild(passwordFieldWithIcon);
+      logoBg.appendChild(errorPassword);
+
+      const errorField = this.#createElementWithClass('div', 'login-error');
+      errorField.innerHTML = 'Вы еще не зарегистрированы';
 
       form.appendChild(logoBg);
       form.appendChild(errorField);
@@ -147,10 +154,12 @@ export default class LoginComponent {
         const testPassword = passwordRegExp.test(passwordInput.value);
 
         if (!testEmail) {
+          errorEmail.className = 'login-error-active';
           emailInput.className = 'form-field-novalid';
         }
 
         if (!testPassword) {
+          errorPassword.className = 'login-error-active';
           passwordInput.className = 'form-field-novalid';
         }
         if (!testEmail || !testPassword) {
@@ -163,9 +172,35 @@ export default class LoginComponent {
         // /!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-        window.User.loginWithCredentials(email, password, ()=> {
-          window.location.reload();
-        });
+        const requestOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            'email': email,
+            'password': password,
+          }),
+          credentials: 'include',
+        };
+        fetch(`${serverAddress}/api/v1/login`, requestOptions)
+            .then((response) =>
+              response.json().then((data) => ({
+                data: data,
+                status: response.status,
+              })).then((res) => {
+                if (res.status === 200 && res.data.status === 200) {
+                  errorField.className = 'login-error';
+                  window.User.loginWithCookie(()=> {
+                    window.location.reload();
+                  });
+                } else if (res.data.status === 404) {
+                  errorField.className = 'login-error-active';
+                  // loginPageError("User not found")
+                }
+              })).catch((error) => console.log(error));
+
+        // window.User.loginWithCredentials(email, password, ()=> {
+        //   window.location.reload();
+        // });
 
 
         // /!!!!!!!!!!!!!!!!!!!!!!!

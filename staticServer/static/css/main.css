@@ -15,6 +15,15 @@ textarea:focus, input:focus{
     visibility: hidden;
 }
 
+.login-error-active {
+    width: 65%;
+    padding-top: 3%;
+    font-family: 'Futura Now Headline Bold';
+    font-size: 14px;
+    color: rgb(226, 83, 83);
+    text-align: center;
+}
+
 div.center-container {
     display: flex;
     align-items: center;
@@ -103,7 +112,7 @@ div.center-container {
 
 .form-field-novalid {
     margin-top: 10%;
-    width: 60%;
+    width: 65%;
     height: 70px;
     padding-left: 65px;
     background: radial-gradient(112.16% 418.59% at 0% 0%, rgba(226, 246, 255, 0.4) 0%, rgba(255, 0, 0, 0.289583) 25.52%, rgba(0, 165, 245, 0) 100%);

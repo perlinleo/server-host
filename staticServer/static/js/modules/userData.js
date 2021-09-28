@@ -64,7 +64,7 @@ loginWithCredentials(email, password, callback=noop) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       'email': email,
-      'password': password,
+      'password': password,ле
     }),
     credentials: 'include',
   };
@@ -76,8 +76,7 @@ loginWithCredentials(email, password, callback=noop) {
         })).then((res) => {
           if (res.status === 200 && res.data.status === 200) {
             this.loginWithCookie(callback);
-          } else if (res.data.status === 404) {
-              
+          } else if (res.data.status === 404) {              
             // loginPageError("User not found")
           }
         })).catch((error) => console.log(error));
