@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -20,6 +21,28 @@ const (
 	StatusInternalServerError = 500
 	StatusEmailAlreadyExists  = 1001
 )
+
+func getAgeFromDate(date string) (uint, error) {
+	// 2012-12-12
+	// 0123456789
+	// userDay, err := strconv.Atoi(date[8:])
+	// if err != nil {
+	// 	return 0, errors.New("failed on userDay")
+	// }
+	// userMonth, err := strconv.Atoi(date[5:7])
+	// if err != nil {
+	// 	return 0, errors.New("failed on userMonth")
+	// }
+
+	userYear, err := strconv.Atoi(date[:4])
+	if err != nil {
+		return 0, errors.New("failed on userYear")
+	}
+
+	age := (uint)(time.Now().Year() - userYear)
+
+	return age, nil
+}
 
 func sendResp(resp JSON, w *http.ResponseWriter) {
 	byteResp, err := json.Marshal(resp)
@@ -124,6 +147,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		status = StatusNotFound
 	}
 
+	resp.Body = identifiableUser
 	resp.Status = status
 	sendResp(resp, &w)
 }
@@ -191,6 +215,7 @@ func (env *Env) editHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err = json.Unmarshal(byteReq, &user)
 	if err != nil {
+		fmt.Println("unmarhal error")
 		resp.Status = StatusBadRequest
 		sendResp(resp, &w)
 		return
@@ -198,6 +223,7 @@ func (env *Env) editHandler(w http.ResponseWriter, r *http.Request) {
 
 	session, err := r.Cookie("sessionId")
 	if err != nil {
+		fmt.Println("session error")
 		resp.Status = StatusNotFound
 		sendResp(resp, &w)
 		return
@@ -211,9 +237,15 @@ func (env *Env) editHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser.Name = user.Name
-	currentUser.Age = user.Age
+	currentUser.Date = user.Date
 	currentUser.Description = user.Description
 	currentUser.Tags = user.Tags
+	currentUser.Age, err = getAgeFromDate(user.Date)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, &w)
+		return
+	}
 
 	err = env.db.updateUser(currentUser)
 	if err != nil {
@@ -345,30 +377,33 @@ func init() {
 		Name:        "Mikhail",
 		Email:       "mumeu222@mail.ru",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
 	marvin2 := User{
 		ID:          2,
 		Name:        "Mikhail2",
 		Email:       "mumeu222@mail.ru2",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
 	marvin3 := User{
 		ID:          3,
 		Name:        "Mikhail3",
 		Email:       "mumeu222@mail.ru3",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
 	db.users[1] = marvin
 	db.users[2] = marvin2
