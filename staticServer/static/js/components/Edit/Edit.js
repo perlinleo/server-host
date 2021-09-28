@@ -12,7 +12,7 @@ export default class EditComponent {
   }
 
   #renderDOM() {
-    function createInputEdit(type, name, place, className) {
+    function createInputEdit(type, name, place, className, value) {
       const input = document.createElement('input');
       input.type = type;
       input.name = name;
@@ -45,7 +45,11 @@ export default class EditComponent {
 
     const divDate = document.createElement('div');
     divDate.className = 'inputEdit';
-    const inputDate = createInputEdit('date', 'calendar', '20.06.2001', 'form-field text-with-icon');
+    const inputDate = document.createElement('input')
+    inputDate.type = 'date'
+    inputDate.className = 'form-field text-with-icon'
+    inputDate.value = user.date
+    console.log(user.date)
     inputDate.addEventListener('input', () => {
       const test = inputDate.value.toString().length === 0;
       if (test) {
@@ -133,51 +137,56 @@ export default class EditComponent {
     div.appendChild(imgNext);
     buttonSave.appendChild(div);
 
-    form.appendChild(buttonSave);
-
-    const divSelectBox = document.getElementsByClassName('selectBox')[0];
-
     const selectBoxItems = ['anime', 'gaming', 'soccer', 'music'];
-    const existsSelectBoxItems = user.tags;
+    let existsSelectBoxItems;
+    if (user.tags === null) {
+      existsSelectBoxItems = [];
+    } else {
+      existsSelectBoxItems = user.tags;
+    }
+
+    existsSelectBoxItems.forEach(function(item) {
+      const tag = document.createElement('div');
+      tag.className = 'tag-edit';
+      tag.textContent = item;
+      TagsContainer.appendChild(tag);
+
+    });
+    // console.log(user.tags)
 
     const selectBox = document.createElement('select');
     selectBox.className = 'dropdown-select';
     const selectItem = document.createElement('option');
     selectItem.textContent = 'Тэги';
     selectItem.value = 'Тэги';
-    selectItem.disabled = true;
     selectBox.appendChild(selectItem);
-    selectBoxItems.forEach(function(item, i, selectBoxItems) {
+    selectBoxItems.forEach(function(item) {
       const selectItem = document.createElement('option');
       selectItem.textContent = item;
       selectItem.value = item;
       selectBox.appendChild(selectItem);
     });
 
-    const tagsCont = document.getElementById('tagsID');
-
     selectBox.onchange = function() {
-      divSelectBox.innerHTML = '';
-      const {
-        value,
-      } = selectBox;
-      if (existsSelectBoxItems.indexOf(value) != -1) {
+      divSelect.innerHTML = '';
+      const {value} = selectBox;
+      if (existsSelectBoxItems.indexOf(value) != -1 || value === 'Тэги') {
         return;
       }
       const tag = document.createElement('div');
       tag.className = 'tag-edit';
       tag.textContent = value;
-      tagsCont.appendChild(tag);
+      TagsContainer.appendChild(tag);
       tag.disabled = true;
       existsSelectBoxItems.push(value);
     };
 
-    form.addEventListener('submit', (e) => {
-      alert('dijsaidjsaidas');
-      e.preventDefault();
-      const testName = inputName.value.length === 0;
-      const testDate = inputDate.value.toString().length === 0;
-      const testDesc = inputDesc.value.length === 0;
+    // form.addEventListener('submit', (e) => {
+    buttonSave.onclick = function() {
+      // e.preventDefault();
+      const testName = inputName.value.length !== 0;
+      const testDate = inputDate.value.toString().length === 10;
+      const testDesc = desc.value.length !== 0;
 
       if (!testName) {
         inputName.className = 'form-field-edit-novalid text-without-icon';
@@ -188,7 +197,7 @@ export default class EditComponent {
       }
 
       if (!testDesc) {
-        inputDesc.className = 'form-field-edit-novalid';
+        desc.className = 'form-field-edit-novalid text-desc';
       }
 
       if (!testName || !testDate || !testDesc) {
@@ -197,36 +206,11 @@ export default class EditComponent {
 
       const name = inputName.value.trim();
       const date = inputDate.value.trim();
-      const desc = inputDesc.value.trim();
-      const requestOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          'name': name,
-          'age': date,
-          'description': desc,
-          'tags': tags,
-        }),
-        credentials: 'include',
-      };
-      fetch(`${localAddress}/api/v1/edit`, requestOptions)
-          .then((response) =>
-            response.json().then((data) => ({
-              data: data,
-              status: response.status,
-            })).then((res) => {
-              if (res.status === 200 && res.data.status === 200) {
-                setUserProfile(res.data.body);
-              } else if (res.data.status === 404) {
-                const userNotFound = document.createElement('span');
-                userNotFound.textContent = 'Неправильный ввод';
-                userNotFound.style.marginTop = '10px';
-                form.appendChild(userNotFound);
-              }
-            })).catch((error) => console.log(error));
-    });
+      const description = desc.value.trim();
+
+      window.User.editProfile(name, date, description, existsSelectBoxItems)
+
+    };
 
     this.#parent.addEventListener('click', function(e) {
       e.preventDefault();
@@ -235,13 +219,16 @@ export default class EditComponent {
       } = e;
 
       if (target.tagName.toLowerCase() === 'option') {
-        divSelectBox.innerHTML = '';
+        divSelect.innerHTML = '';
       }
       if (target.id === 'addID') {
-        divSelectBox.appendChild(selectBox);
+        divSelect.appendChild(selectBox);
       }
     });
     this.#parent.appendChild(form);
+
+    form.appendChild(buttonSave);
+
   }
   render() {
     this.#renderDOM();

@@ -55,7 +55,7 @@ func main() {
 	mux.PathPrefix("/").Handler(spa)
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler:      mux,
 		Addr:         ":443",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
