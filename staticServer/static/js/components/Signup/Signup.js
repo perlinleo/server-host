@@ -1,4 +1,6 @@
 
+import EditComponent from '../Edit/Edit.js';
+
 export default class SignupComponent {
   _parent
   _data
@@ -27,7 +29,7 @@ export default class SignupComponent {
 
       return input;
     }
-    root.innerHTML = '';
+    this._parent.innerHTML = '';
 
     const header = createCenterContainer();
 
@@ -36,7 +38,7 @@ export default class SignupComponent {
     headerText.classList.add('login-header');
 
     header.appendChild(headerText);
-    root.appendChild(header);
+    this._parent.appendChild(header);
 
     const form = document.createElement('form');
     form.classList.add('login-form');
@@ -192,9 +194,11 @@ export default class SignupComponent {
               status: response.status,
             })).then((res) => {
               if (res.status === 200 && res.data.status === 200) {
-                window.User.loginWithCredentials(email, password, ()=> {
-                  window.location.reload();
-                });
+                // window.User.loginWithCredentials(email, password, ()=> {
+                //   window.location.reload();
+                // });
+                const edit = new EditComponent(this._parent);
+                edit.render();
               } else if (res.data.status === 404) {
                 const userNotFound = document.createElement('span');
                 userNotFound.textContent = 'Вы уже зарегестрированы';
@@ -204,8 +208,8 @@ export default class SignupComponent {
             })).catch((error) => console.log(error));
     });
 
-    root.appendChild(formContainer);
-    root.appendChild(buttonBackContainer);
+    this._parent.appendChild(formContainer);
+    this._parent.appendChild(buttonBackContainer);
   }
 
   render() {
