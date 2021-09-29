@@ -1,4 +1,6 @@
 
+import EditComponent from '../Edit/Edit.js';
+
 export default class SignupComponent {
   _parent
   _data
@@ -33,7 +35,7 @@ export default class SignupComponent {
 
       return input;
     }
-    root.innerHTML = '';
+    this._parent.innerHTML = '';
 
     const header = createCenterContainer();
 
@@ -42,7 +44,7 @@ export default class SignupComponent {
     headerText.classList.add('login-header');
 
     header.appendChild(headerText);
-    root.appendChild(header);
+    this._parent.appendChild(header);
 
     const form = document.createElement('form');
     form.classList.add('login-form');
@@ -222,17 +224,19 @@ export default class SignupComponent {
             })).then((res) => {
               if (res.status === 200 && res.data.status === 200) {
                 errorField.className = 'login-error';
-                window.User.loginWithCredentials(email, password, ()=> {
-                  window.location.reload();
-                });
+                const edit = new EditComponent(this._parent);
+                edit.render();
+//                 window.User.loginWithCredentials(email, password, ()=> {
+//                   window.location.reload();
+//                 });
               } else if (res.data.status === 1001) {
                 errorField.className = 'login-error-active';
               }
             })).catch((error) => console.log(error));
     });
 
-    root.appendChild(formContainer);
-    root.appendChild(buttonBackContainer);
+    this._parent.appendChild(formContainer);
+    this._parent.appendChild(buttonBackContainer);
   }
 
   render() {
