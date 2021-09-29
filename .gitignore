@@ -5,6 +5,8 @@ node_modules
 
 .vscode
 
+__debug_bin
+
 package-lock.json
 
 go.sum

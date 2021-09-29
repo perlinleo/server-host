@@ -158,6 +158,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		status = StatusNotFound
 	}
 
+	resp.Body = identifiableUser
 	resp.Status = status
 	sendResp(resp, w)
 }
