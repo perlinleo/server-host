@@ -75,7 +75,7 @@ export default class EditComponent {
       }
     });
     divDesc.appendChild(desc);
-
+ 
     const divTags = document.createElement('div');
     divTags.className = 'inputEdit';
 
@@ -139,12 +139,13 @@ export default class EditComponent {
 
     const selectBoxItems = ['anime', 'gaming', 'soccer', 'music'];
     let existsSelectBoxItems;
-    if (user.tags === null) {
+    if (user.tags === null || user.tags === undefined) {
       existsSelectBoxItems = [];
     } else {
       existsSelectBoxItems = user.tags;
     }
 
+    console.log(existsSelectBoxItems)
     existsSelectBoxItems.forEach(function(item) {
       const tag = document.createElement('div');
       tag.className = 'tag-edit';
