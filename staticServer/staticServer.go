@@ -55,11 +55,12 @@ func main() {
 	mux.PathPrefix("/").Handler(spa)
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler:      mux,
 		Addr:         ":443",
 		WriteTimeout: http.DefaultClient.Timeout,
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
 
+	// log.Fatal(srv.ListenAndServe())
 	log.Fatal(srv.ListenAndServeTLS("../monkeys-drip.com+3.pem", "../monkeys-drip.com+3-key.pem"))
 }

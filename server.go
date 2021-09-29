@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -21,24 +22,56 @@ const (
 	StatusEmailAlreadyExists  = 1001
 )
 
-func sendResp(resp JSON, w *http.ResponseWriter) {
-	byteResp, err := json.Marshal(resp)
+func getAgeFromDate(date string) (uint, error) {
+	// 2012-12-12
+	// 0123456789
+	// userDay, err := strconv.Atoi(date[8:])
+	// if err != nil {
+	// 	return 0, errors.New("failed on userDay")
+	// }
+	// userMonth, err := strconv.Atoi(date[5:7])
+	// if err != nil {
+	// 	return 0, errors.New("failed on userMonth")
+	// }
+
+	userYear, err := strconv.Atoi(date[:4])
 	if err != nil {
-		http.Error(*w, err.Error(), http.StatusInternalServerError)
+		return 0, errors.New("failed on userYear")
 	}
-	(*w).WriteHeader(http.StatusOK)
-	(*w).Write(byteResp)
+
+	age := (uint)(time.Now().Year() - userYear)
+
+	return age, nil
 }
 
-func setupCORSResponse(w *http.ResponseWriter, r *http.Request) {
-	(*w).Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-	(*w).Header().Set("Access-Control-Allow-Credentials", "true")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Allow-Credentials, Set-Cookie, Access-Control-Allow-Credentials, Access-Control-Allow-Origin")
+func sendResp(resp JSON, w http.ResponseWriter) {
+	byteResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(byteResp)
+}
+
+func setupCORSResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers",
+		"Accept,"+
+			"Content-Type,"+
+			"Content-Length,"+
+			"Accept-Encoding,"+
+			"X-CSRF-Token,"+
+			"Authorization,"+
+			"Allow-Credentials,"+
+			"Set-Cookie,"+
+			"Access-Control-Allow-Credentials,"+
+			"Access-Control-Allow-Origin")
 }
 
 func (env *Env) corsHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 }
 
 func createSessionCookie(user LoginUser) http.Cookie {
@@ -51,46 +84,47 @@ func createSessionCookie(user LoginUser) http.Cookie {
 		Name:     "sessionId",
 		Value:    md5CookieValue,
 		Expires:  expiration,
-		Secure:   false,
+		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 
 	return cookie
 }
 
 func (env *Env) currentUser(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 
 	var resp JSON
 	session, err := r.Cookie("sessionId")
 	if err != nil {
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	resp.Status = StatusOK
 	resp.Body = currentUser
 
-	sendResp(resp, &w)
+	sendResp(resp, w)
 }
 
 func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -98,14 +132,14 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(byteReq, &logUserData)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	identifiableUser, err := env.db.getUser(logUserData.Email)
 	if err != nil {
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -115,7 +149,7 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 		err = env.sessionDB.newSessionCookie(cookie.Value, identifiableUser.ID)
 		if err != nil {
 			resp.Status = StatusInternalServerError
-			sendResp(resp, &w)
+			sendResp(resp, w)
 			return
 		}
 
@@ -125,18 +159,18 @@ func (env *Env) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Status = status
-	sendResp(resp, &w)
+	sendResp(resp, w)
 }
 
 func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 
 	var resp JSON
 
 	byteReq, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -144,21 +178,21 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(byteReq, &logUserData)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	identifiableUser, _ := env.db.getUser(logUserData.Email)
 	if !identifiableUser.isEmpty() {
 		resp.Status = StatusEmailAlreadyExists
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	user, err := env.db.createUser(logUserData)
 	if err != nil {
 		resp.Status = StatusInternalServerError
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -166,29 +200,88 @@ func (env *Env) signupHandler(w http.ResponseWriter, r *http.Request) {
 	err = env.sessionDB.newSessionCookie(cookie.Value, user.ID)
 	if err != nil {
 		resp.Status = StatusInternalServerError
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	http.SetCookie(w, &cookie)
 
 	resp.Status = StatusOK
-	sendResp(resp, &w)
+	sendResp(resp, w)
 }
 
+func (env *Env) editHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORSResponse(w, r)
+
+	var resp JSON
+
+	byteReq, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		resp.Status = StatusBadRequest
+		sendResp(resp, w)
+		return
+	}
+
+	var user User
+	err = json.Unmarshal(byteReq, &user)
+	if err != nil {
+		fmt.Println("unmarhal error")
+		resp.Status = StatusBadRequest
+		sendResp(resp, w)
+		return
+	}
+
+	session, err := r.Cookie("sessionId")
+	if err != nil {
+		fmt.Println("session error")
+		resp.Status = StatusNotFound
+		sendResp(resp, w)
+		return
+	}
+
+	currentUser, err := env.getUserByCookie(session.Value)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, w)
+		return
+	}
+
+	currentUser.Name = user.Name
+	currentUser.Date = user.Date
+	currentUser.Description = user.Description
+	currentUser.Tags = user.Tags
+	currentUser.Age, err = getAgeFromDate(user.Date)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, w)
+		return
+	}
+
+	err = env.db.updateUser(currentUser)
+	if err != nil {
+		resp.Status = StatusNotFound
+		sendResp(resp, w)
+		return
+	}
+
+	resp.Status = StatusOK
+	resp.Body = currentUser
+
+	sendResp(resp, w)
+}
 func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 
 	session, err := r.Cookie("sessionId")
 
 	if err != nil {
-		sendResp(JSON{Status: StatusNotFound}, &w)
+		sendResp(JSON{Status: StatusNotFound}, w)
 		return
 	}
 
 	err = env.sessionDB.deleteSessionCookie(session.Value)
 	if err != nil {
-		sendResp(JSON{Status: StatusInternalServerError}, &w)
+		sendResp(JSON{Status: StatusInternalServerError}, w)
 		return
 	}
 
@@ -197,23 +290,23 @@ func (env *Env) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORSResponse(&w, r)
+	setupCORSResponse(w, r)
 
 	var resp JSON
 
 	// get current user by cookie
 	session, err := r.Cookie("sessionId")
 	if err == http.ErrNoCookie {
-	
+
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 	currentUser, err := env.getUserByCookie(session.Value)
 	if err != nil {
-		
+
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -221,14 +314,14 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 	byteReq, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 	var swipedUserData SwipedUser
 	err = json.Unmarshal(byteReq, &swipedUserData)
 	if err != nil {
 		resp.Status = StatusBadRequest
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
@@ -236,21 +329,21 @@ func (env *Env) nextUserHandler(w http.ResponseWriter, r *http.Request) {
 	err = env.db.addSwipedUsers(currentUser.ID, swipedUserData.Id)
 	if err != nil {
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 	// find next user for swipe
 	nextUser, err := env.db.getNextUserForSwipe(currentUser.ID)
 	if err != nil {
 		resp.Status = StatusNotFound
-		sendResp(resp, &w)
+		sendResp(resp, w)
 		return
 	}
 
 	resp.Status = StatusOK
 	resp.Body = nextUser
-	
-	sendResp(resp, &w)
+
+	sendResp(resp, w)
 }
 
 type Env struct {
@@ -260,6 +353,7 @@ type Env struct {
 		createUser(logUserData LoginUser) (User, error)
 		addSwipedUsers(currentUserId, swipedUserId uint64) error
 		getNextUserForSwipe(currentUserId uint64) (User, error)
+		updateUser(user User) error
 	}
 	sessionDB interface {
 		getUserIDByCookie(sessionCookie string) (uint64, error)
@@ -285,40 +379,52 @@ func (env Env) getUserByCookie(sessionCookie string) (User, error) {
 var (
 	db = NewMockDB()
 )
+
 func init() {
-	marvin := User{
+	db.users[1] = User{
 		ID:          1,
 		Name:        "Mikhail",
 		Email:       "mumeu222@mail.ru",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
-	marvin2 := User{
+	db.users[2] = User{
 		ID:          2,
 		Name:        "Mikhail2",
-		Email:       "mumeu222@mail.ru2",
+		Email:       "mumeu222@mail.ru",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
-	marvin3 := User{
+	db.users[3] = User{
 		ID:          3,
 		Name:        "Mikhail3",
-		Email:       "mumeu222@mail.ru3",
+		Email:       "mumeu222@mail.ru",
 		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
 		Age:         20,
 		Description: "Hahahahaha",
 		ImgSrc:      "/img/Yachty-tout.jpg",
-		Tags:        []string{"haha", "hihi"},
+		Tags:        []string{"soccer", "anime"},
 	}
-	db.users[1] = marvin
-	db.users[2] = marvin2
-	db.users[3] = marvin3
+	db.users[4] = User{
+		ID:          4,
+		Name:        "Mikhail4",
+		Email:       "mumeu222@mail.ru",
+		Password:    "af57966e1958f52e41550e822dd8e8a4", //VBif222!
+		Date:        "2012-12-12",
+		Age:         20,
+		Description: "Hahahahaha",
+		ImgSrc:      "/img/Yachty-tout.jpg",
+		Tags:        []string{"soccer", "anime"},
+	}
 }
 
 func main() {
@@ -333,6 +439,7 @@ func main() {
 	router.HandleFunc("/api/v1/currentuser", env.currentUser).Methods("GET")
 	router.HandleFunc("/api/v1/login", env.loginHandler).Methods("POST")
 	//router.HandleFunc("/api/v1/createprofile", env.loginHandler).Methods("POST")
+	router.HandleFunc("/api/v1/edit", env.editHandler).Methods("POST")
 	router.HandleFunc("/api/v1/signup", env.signupHandler).Methods("POST")
 	router.HandleFunc("/api/v1/logout", env.logoutHandler).Methods("GET")
 	router.HandleFunc("/api/v1/nextswipeuser", env.nextUserHandler).Methods("POST")
@@ -344,5 +451,5 @@ func main() {
 		ReadTimeout:  http.DefaultClient.Timeout,
 	}
 
-	log.Fatal(srv.ListenAndServeTLS("./monkeys-drip.com+3.pem", "./monkeys-drip.com+3-key.pem"))
+	log.Fatal(srv.ListenAndServeTLS("monkeys-drip.com+3.pem", "monkeys-drip.com+3-key.pem"))
 }
