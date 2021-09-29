@@ -30,7 +30,11 @@ export default class ProfileComponent {
         const lol = window.User.getUserData();
 
         const img = document.createElement('img');
-        img.src = `${lol.photoSrc}`;
+        if (lol.photoSrc === '') {
+          img.src = '/img/default.jpg'
+        } else {
+          img.src = `${lol.photoSrc}`;
+        }
         img.className = 'card-el profile-image-expand';
         cardMain.appendChild(img);
 
