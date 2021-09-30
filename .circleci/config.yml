@@ -25,3 +25,5 @@ jobs:
             mv coverage.html /tmp/artifacts
       - store_artifacts:
           path: /tmp/artifacts
+      - store_test_results:
+          path: test-results
